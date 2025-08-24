@@ -57,6 +57,9 @@ private:
     };
     Mode mode = Mode::Triggering;
 
+    // Encoder position tracking (0.0 = minimum, 1.0 = maximum)
+    float encoderPositions[8];
+
 public:
     PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSender> osc = nullptr);
     ~PushUI();
@@ -76,6 +79,12 @@ public:
     int getNumLayers() const { return resolumeTracker.getLayerCount(); }
     int getNumColumns() const { return resolumeTracker.getColumnCount(); }
     ResolumeTracker& getResolumeTracker() { return resolumeTracker; }
+
+    // Encoder position tracking methods
+    void updateEncoderPosition(int encoderIndex, int relativeValue);
+    void handleEncoderTouch(int encoderIndex);
+    void handleEncoderButtonPress(int encoderIndex);
+    float getEncoderPosition(int encoderIndex) const;
 
 private:
     void handlePadPress(int note, int velocity);

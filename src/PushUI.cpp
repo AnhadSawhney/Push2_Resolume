@@ -4,15 +4,20 @@
 #include <iostream>
 
 PushUI::PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSender> osc)
-    : pushDevice(push), resolumeTracker(tracker), oscSender(osc), // Changed to shared_ptr
+    : pushDevice(push), resolumeTracker(tracker), oscSender(osc),
       columnOffset(0), layerOffset(0),
       lastKnownDeck(-1), trackingInitialized(false),
-      numLayers(0), numColumns(0), mode(Mode::Triggering) // <-- add members for layer/column count
+      numLayers(0), numColumns(0), mode(Mode::Triggering)
 {
     lights = new PushLights(pushDevice);
     display = new PushDisplay(pushDevice);
     lights->setParentUI(this);
     display->setParentUI(this);
+    
+    // Initialize encoder positions to center (0.5)
+    for (int i = 0; i < 8; i++) {
+        encoderPositions[i] = 0.5f;
+    }
 }
 
 PushUI::~PushUI() {
@@ -55,12 +60,33 @@ void PushUI::toggleMode() {
 
 void PushUI::onMidiMessage(const PushMidiMessage& msg) {
     if (msg.isNoteOn()) {
+        // Handle encoder touch events (notes 71-78)
+        if (msg.getNote() >= 71 && msg.getNote() <= 78 && msg.getVelocity() > 0) {
+            int encoderIndex = msg.getNote() - 71;
+            handleEncoderTouch(encoderIndex);
+            return;
+        }
+        
         handlePadPress(msg.getNote(), msg.getVelocity());
     } else if (msg.isPitchBend()) {
         handleTouchStripPitchBend(msg.getPitchBend());
     } else if (msg.isControlChange()) {
         int cc = msg.getController();
         int value = msg.getValue();
+
+        // Handle encoder position updates (CC71-CC78)
+        if (cc >= 71 && cc <= 78) {
+            int encoderIndex = cc - 71;
+            updateEncoderPosition(encoderIndex, value);
+            return;
+        }
+
+        // Handle encoder button presses (CC102-CC109 - buttons above display)
+        if (cc >= 102 && cc <= 109 && value > 0) {
+            int encoderIndex = cc - 102;
+            handleEncoderButtonPress(encoderIndex);
+            return;
+        }
 
         // Master button (cc28) toggles mode
         if (cc == 28 && value > 0) {
@@ -255,6 +281,46 @@ void PushUI::handleTouchStripPitchBend(uint16_t pitchBendValue) {
     } else {
         std::cout << "Would set layer " << selectedLayer << " opacity to: " << opacity << std::endl;
     }
+}
+
+void PushUI::updateEncoderPosition(int encoderIndex, int relativeValue) {
+    if (encoderIndex < 0 || encoderIndex >= 8) return;
+    
+    // Convert relative encoder value to position change
+    float deltaPosition = 0.0f;
+    
+    if (relativeValue <= 63) {
+        // Clockwise turn (positive values 1-63)
+        deltaPosition = relativeValue * 0.01f; // Adjust sensitivity as needed
+    } else {
+        // Counter-clockwise turn (values 64-127, representing -64 to -1)
+        deltaPosition = (relativeValue - 128) * 0.01f; // Negative delta
+    }
+    
+    // Update position and clamp to 0.0-1.0 range
+    encoderPositions[encoderIndex] += deltaPosition;
+    encoderPositions[encoderIndex] = std::max(0.0f, std::min(1.0f, encoderPositions[encoderIndex]));
+}
+
+void PushUI::handleEncoderTouch(int encoderIndex) {
+    if (encoderIndex < 0 || encoderIndex >= 8) return;
+    
+    // TODO: Handle encoder touch event
+    // This is called when encoder is touched (note on message)
+    std::cout << "Encoder " << encoderIndex << " touched, position: " << encoderPositions[encoderIndex] << std::endl;
+}
+
+void PushUI::handleEncoderButtonPress(int encoderIndex) {
+    if (encoderIndex < 0 || encoderIndex >= 8) return;
+    
+    // TODO: Handle encoder button press event  
+    // This is called when button above encoder is pressed (CC102-109)
+    std::cout << "Encoder button " << encoderIndex << " pressed, position: " << encoderPositions[encoderIndex] << std::endl;
+}
+
+float PushUI::getEncoderPosition(int encoderIndex) const {
+    if (encoderIndex < 0 || encoderIndex >= 8) return 0.0f;
+    return encoderPositions[encoderIndex];
 }
 
 /*
