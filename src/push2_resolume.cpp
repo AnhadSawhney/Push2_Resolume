@@ -216,6 +216,22 @@ int main(int argc, char* argv[]) {
             std::cout << "PushDisplay thread exiting" << std::endl;
         });
         
+        // LibUSB event handling thread for async transfers
+        std::thread libusbThread([&shouldStop]() {
+            std::cout << "LibUSB event thread started" << std::endl;
+            
+            while (!shouldStop.load()) {
+                // Handle libusb events with a timeout
+                struct timeval timeout = {0, 100000}; // 100ms timeout
+                int result = libusb_handle_events_timeout(nullptr, &timeout);
+                if (result < 0 && result != LIBUSB_ERROR_INTERRUPTED) {
+                    std::cerr << "LibUSB event handling error: " << libusb_error_name(result) << std::endl;
+                }
+            }
+            
+            std::cout << "LibUSB event thread exiting" << std::endl;
+        });
+        
         // If in livetree mode, run the live tree display loop and exit
         if (liveTreeMode) {
             while (true) {
@@ -295,6 +311,9 @@ int main(int argc, char* argv[]) {
         }
         if (displayThread.joinable()) {
             displayThread.join();
+        }
+        if (libusbThread.joinable()) {
+            libusbThread.join();
         }
         
         std::cout << "Push2-Resolume Controller stopped." << std::endl;

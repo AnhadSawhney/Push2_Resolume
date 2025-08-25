@@ -58,19 +58,6 @@ struct PushMidiMessage {
 static const int DISPLAY_WIDTH = 960;
 static const int DISPLAY_HEIGHT = 160;
 
-// Frame data structure for queuing
-struct FrameData {
-    uint8_t data[DISPLAY_WIDTH * DISPLAY_HEIGHT * 2]; // RGB565 data
-    std::chrono::steady_clock::time_point timestamp;
-    
-    FrameData() : timestamp(std::chrono::steady_clock::now()) {}
-    
-    void copyFrom(const uint8_t* rgb565Data) {
-        memcpy(data, rgb565Data, sizeof(data));
-        timestamp = std::chrono::steady_clock::now();
-    }
-};
-
 class PushUSB {
 private:
     // RtMidi objects
@@ -82,101 +69,37 @@ private:
 
     libusb_device_handle* deviceHandle = nullptr;
     
-    // Threading for non-blocking USB transfers
-    std::thread usbThread;
-    std::atomic<bool> shouldStopUsbThread;
-    
-    // Frame queue for non-blocking display updates
-    std::queue<FrameData> frameQueue;
-    std::mutex frameQueueMutex;
-    std::condition_variable frameAvailable;
-    
-    // Frame queue management
-    static const size_t MAX_FRAME_QUEUE_SIZE = 3; // Keep only the latest frames
-    FrameData currentFrame; // Currently processing frame
-    
-    // USB thread function for non-blocking transfers
-    void usbThreadFunction() {
-        std::cout << "USB thread started" << std::endl;
-        
-        while (!shouldStopUsbThread.load()) {
-            std::unique_lock<std::mutex> lock(frameQueueMutex);
-            
-            // Wait for frames to be available or stop signal
-            frameAvailable.wait_for(lock, std::chrono::milliseconds(50), [this] {
-                return !frameQueue.empty() || shouldStopUsbThread.load();
-            });
-            
-            if (shouldStopUsbThread.load()) {
-                break;
-            }
-            
-            // Get the latest frame if available
-            if (!frameQueue.empty()) {
-                currentFrame = frameQueue.front();
-                frameQueue.pop();
-                lock.unlock();
-                
-                // Clear any remaining frames to keep latency low
-                {
-                    std::lock_guard<std::mutex> clearLock(frameQueueMutex);
-                    while (frameQueue.size() > 1) {
-                        frameQueue.pop();
-                    }
-                }
-                
-                // Send frame without blocking the main thread
-                if (deviceHandle) {
-                    sendDisplayFrameBlocking565_Internal(currentFrame.data);
-                }
-            } else {
-                lock.unlock();
-            }
-            
-            // Small delay to prevent excessive CPU usage
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    // Asynchronous USB transfer management
+    libusb_transfer* currentTransfer = nullptr;
+    std::atomic<bool> transferInProgress;
+    std::mutex transferMutex;
+    // Static callback for asynchronous USB transfers
+    static void LIBUSB_CALL transferCallback(libusb_transfer* transfer) {
+        PushUSB* pushUSB = static_cast<PushUSB*>(transfer->user_data);
+        if (pushUSB) {
+            pushUSB->onTransferComplete(transfer);
         }
-        
-        std::cout << "USB thread stopped" << std::endl;
     }
     
-    // Internal version of sendDisplayFrameBlocking565 for use by USB thread
-    bool sendDisplayFrameBlocking565_Internal(const uint8_t* rgb565Data) {
-        if (!deviceHandle || !rgb565Data) {
-            return false;
+    // Handle transfer completion
+    void onTransferComplete(libusb_transfer* transfer) {
+        std::lock_guard<std::mutex> lock(transferMutex);
+        
+        if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
+            std::cerr << "USB transfer failed with status: " << transfer->status << std::endl;
         }
-
-        // Send frame header first
-        uint8_t frameHeader[16] = {
-            0xFF, 0xCC, 0xAA, 0x88,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
-        };
-
-        int transferred = 0;
-        int result = libusb_bulk_transfer(deviceHandle, 0x01, frameHeader, 16, &transferred, 1000);
-        if (result != 0 || transferred != 16) {
-            std::cerr << "Failed to send frame header: " << result << std::endl;
-            return false;
+        
+        // Clean up the transfer buffer that was allocated in sendDisplayFrameBlocking565
+        if (transfer->buffer) {
+            delete[] transfer->buffer;
         }
-
-        // Send RGB565 pixel data line by line with XOR pattern
-        uint8_t lineBuffer[2048]; // 1920 bytes pixel data + 128 filler bytes
-
-        for (int y = 0; y < 160; y++) {
-            // Apply XOR pattern to RGB565 line (no conversion needed)
-            applyXORPatternToRGB565Line(rgb565Data + (y * 960 * 2), lineBuffer);
-
-            // Send line buffer
-            result = libusb_bulk_transfer(deviceHandle, 0x01, lineBuffer, 2048, &transferred, 1000);
-            if (result != 0 || transferred != 2048) {
-                std::cerr << "Failed to send line " << y << ": " << result << std::endl;
-                return false;
-            }
+        
+        // Free the transfer and mark as not in progress
+        libusb_free_transfer(transfer);
+        if (currentTransfer == transfer) {
+            currentTransfer = nullptr;
         }
-
-        return true;
+        transferInProgress.store(false);
     }
     
     // Static callback for RtMidi (C-style callback required)
@@ -281,7 +204,7 @@ private:
     }
     
 public:
-    PushUSB() : isConnected(false), shouldStopUsbThread(false) {
+    PushUSB() : isConnected(false), transferInProgress(false) {
         try {
             midiIn = std::make_unique<RtMidiIn>();
             midiOut = std::make_unique<RtMidiOut>();
@@ -292,14 +215,6 @@ public:
     
     ~PushUSB() {
         disconnect();
-        
-        // Stop USB thread
-        shouldStopUsbThread.store(true);
-        frameAvailable.notify_all();
-        
-        if (usbThread.joinable()) {
-            usbThread.join();
-        }
     }
     
     bool initialize() {
@@ -357,10 +272,7 @@ public:
             return false;
         }
 
-        // Start USB thread for non-blocking frame transfers
-        shouldStopUsbThread.store(false);
-        usbThread = std::thread(&PushUSB::usbThreadFunction, this);
-        std::cout << "USB thread started for non-blocking transfers" << std::endl;
+        std::cout << "Push 2 USB display opened successfully" << std::endl;
 
         return true;
     }
@@ -385,12 +297,14 @@ public:
             std::cerr << "MIDI disconnect error: " << error.getMessage() << std::endl;
         }
 
-        // Stop USB thread before closing device
-        if (usbThread.joinable()) {
-            shouldStopUsbThread.store(true);
-            frameAvailable.notify_all();
-            usbThread.join();
-            std::cout << "USB thread stopped" << std::endl;
+        // Cancel any pending USB transfers
+        {
+            std::lock_guard<std::mutex> lock(transferMutex);
+            if (currentTransfer) {
+                libusb_cancel_transfer(currentTransfer);
+                // Transfer will be freed in the callback
+                currentTransfer = nullptr;
+            }
         }
 
         if (deviceHandle) {
@@ -617,31 +531,82 @@ public:
         return sendSysEx(sysex);
     }
 
-    // Send frame to Push 2 display (RGB565 format - no conversion)
-    // Non-blocking version - queues frame for USB thread to send
+    // Send frame to Push 2 display (RGB565 format) using async libusb
+    // Non-blocking version - uses libusb async transfers
     bool sendDisplayFrameBlocking565(const uint8_t* rgb565Data) {
-        if (!deviceHandle || !rgb565Data || !usbThread.joinable()) {
+        if (!deviceHandle || !rgb565Data) {
             return false;
         }
 
-        {
-            std::lock_guard<std::mutex> lock(frameQueueMutex);
-            
-            // Clear old frames if queue is getting full to keep latency low
-            while (frameQueue.size() >= MAX_FRAME_QUEUE_SIZE) {
-                frameQueue.pop();
-            }
-            
-            // Create new frame and copy data
-            FrameData newFrame;
-            newFrame.copyFrom(rgb565Data);
-            
-            // Add to queue
-            frameQueue.push(std::move(newFrame));
+        // Check if a transfer is already in progress
+        if (transferInProgress.load()) {
+            // Previous frame still being sent, skip this frame to avoid blocking
+            return false;
         }
+
+        std::lock_guard<std::mutex> lock(transferMutex);
         
-        // Notify USB thread that a frame is available
-        frameAvailable.notify_one();
+        // Double-check after acquiring lock
+        if (transferInProgress.load()) {
+            return false;
+        }
+
+        // Allocate transfer structure
+        libusb_transfer* transfer = libusb_alloc_transfer(0);
+        if (!transfer) {
+            std::cerr << "Failed to allocate USB transfer" << std::endl;
+            return false;
+        }
+
+        // Calculate total transfer size: 16 byte header + (160 lines * 2048 bytes per line)
+        const size_t totalSize = 16 + (160 * 2048);
+        
+        // Allocate buffer for the entire frame (this will be freed in callback)
+        uint8_t* transferBuffer = new uint8_t[totalSize];
+        
+        // Prepare frame header
+        uint8_t frameHeader[16] = {
+            0xFF, 0xCC, 0xAA, 0x88,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        };
+        
+        // Copy header to transfer buffer
+        memcpy(transferBuffer, frameHeader, 16);
+        
+        // Process RGB565 data line by line and add to transfer buffer
+        uint8_t* bufferPtr = transferBuffer + 16;
+        for (int y = 0; y < 160; y++) {
+            // Apply XOR pattern to RGB565 line directly into transfer buffer
+            applyXORPatternToRGB565Line(rgb565Data + (y * 960 * 2), bufferPtr);
+            bufferPtr += 2048;
+        }
+
+        // Setup async transfer
+        libusb_fill_bulk_transfer(
+            transfer,                    // transfer
+            deviceHandle,               // device handle
+            0x01,                       // endpoint
+            transferBuffer,             // buffer
+            static_cast<int>(totalSize), // length
+            transferCallback,           // callback
+            this,                       // user data
+            5000                        // timeout (5 seconds)
+        );
+
+        // Submit the transfer
+        int result = libusb_submit_transfer(transfer);
+        if (result != 0) {
+            std::cerr << "Failed to submit USB transfer: " << libusb_error_name(result) << std::endl;
+            libusb_free_transfer(transfer);
+            delete[] transferBuffer;
+            return false;
+        }
+
+        // Mark transfer as in progress
+        currentTransfer = transfer;
+        transferInProgress.store(true);
         
         return true;
     }
