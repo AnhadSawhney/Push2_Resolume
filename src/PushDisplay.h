@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "PushUSB.h"
@@ -14,6 +13,13 @@ class PushUI;
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <memory>
+#include <cmath>
+#include <string>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327f
+#endif
 
 // Display constants
 static const int DISPLAY_WIDTH = 960;
@@ -45,6 +51,25 @@ private:
         }
         
         return true;
+    }
+
+    void drawEncoders() {
+        if (!parentUI) return;
+
+        const float spacing = static_cast<float>(DISPLAY_WIDTH) / 8.0f;
+        const float y = static_cast<float>(DISPLAY_HEIGHT) * 0.5f;
+
+        for (int i = 0; i < 8; ++i) {
+            float x = spacing * (i + 0.5f);
+            float currentValue = 0.5f; // placeholder
+            float physicalValue = parentUI->getEncoderPosition(i);
+
+            std::string knobText = std::to_string(i + 1);
+            std::string belowText = "Track " + std::to_string(i + 1);
+
+            drawKnob(static_cast<int>(x), static_cast<int>(y),
+                     knobText, belowText, currentValue, physicalValue);
+        }
     }
 
 public:
@@ -159,24 +184,27 @@ public:
         // Start NanoVG frame
         nvgBeginFrame(vg, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1.0f);
         
-        // Fill entire screen with green for basic test
+        // Background
         nvgBeginPath(vg);
         nvgRect(vg, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-        nvgFillColor(vg, nvgRGB(0, 255, 0)); // Bright green
+        nvgFillColor(vg, nvgRGB(0, 0, 0));
         nvgFill(vg);
-        
-        // TODO: Add more sophisticated UI rendering based on parentUI state
-        // if (parentUI) {
-        //     // Read state from parentUI and render accordingly
-        // }
+
+        if (parentUI && parentUI->getMode() == PushUI::Mode::Selecting) {
+            nvgStrokeColor(vg, nvgRGB(0, 255, 0));
+            nvgStrokeWidth(vg, 2.0f);
+            nvgBeginPath(vg);
+            nvgRect(vg, 1.0f, 1.0f, (float)DISPLAY_WIDTH - 2.0f, (float)DISPLAY_HEIGHT - 2.0f);
+            nvgStroke(vg);
+        }
+
+        drawEncoders();
         
         // End NanoVG frame
         nvgEndFrame(vg);
         
         // Unbind framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        
-        std::cout << "Update completed - green screen rendered" << std::endl;
     }
     
     void sendToDevice() {
@@ -226,21 +254,107 @@ public:
         }
         memcpy(displayBuffer, tempBuffer, sizeof(displayBuffer));
         
-        // Check if we have green pixels
-        bool hasGreen = false;
-        for (int i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT * 4; i += 4) {
-            if (displayBuffer[i+1] > 200) { // Check green channel
-                hasGreen = true;
-                break;
-            }
-        }
-        std::cout << "Frame has green content: " << (hasGreen ? "YES" : "NO") << std::endl;
-        
         // Send to Push device
         if (pushDevice.isDeviceConnected()) {
             pushDevice.sendDisplayFrameBlocking(displayBuffer);
         } else {
             std::cerr << "Push device not connected" << std::endl;
+        }
+    }
+    
+    void drawKnob(int x, int y, const std::string& textOnKnob, const std::string& textBelowKnob,
+                  float currentValue, float physicalValue)
+    {
+        if (!vg || !window) return;
+
+        const float knobRadius = 25.0f;
+        const float trackRadius = 32.0f;
+        const float trackWidth = 4.0f;
+        const float dotRadius = 3.0f;
+        const float dotDistance = 18.0f;
+        
+        // Clamp values to 0-1 range
+        currentValue = std::max(0.0f, std::min(1.0f, currentValue));
+        physicalValue = std::max(0.0f, std::min(1.0f, physicalValue));
+        
+        // Convert values to angles (270 degrees rotation range: -225° to +45°)
+        const float angleRange = 270.0f * M_PI / 180.0f; // 270 degrees in radians
+        const float startAngle = -225.0f * M_PI / 180.0f; // Start at -225 degrees
+        const float currentAngle = startAngle + (currentValue * angleRange);
+        const float physicalAngle = startAngle + (physicalValue * angleRange);
+        
+        float centerX = static_cast<float>(x);
+        float centerY = static_cast<float>(y);
+        
+        // Draw track background (dark gray arc)
+        nvgStrokeColor(vg, nvgRGBA(51, 51, 51, 255)); // 0.2f * 255
+        nvgStrokeWidth(vg, trackWidth);
+        nvgLineCap(vg, NVG_ROUND);
+        nvgBeginPath(vg);
+        nvgArc(vg, centerX, centerY, trackRadius, startAngle, startAngle + angleRange, NVG_CW);
+        nvgStroke(vg);
+        
+        // Draw current value track (bright arc up to currentValue)
+        if (currentValue > 0.0f) {
+            nvgStrokeColor(vg, nvgRGBA(77, 179, 255, 255)); // Light blue
+            nvgStrokeWidth(vg, trackWidth);
+            nvgLineCap(vg, NVG_ROUND);
+            nvgBeginPath(vg);
+            nvgArc(vg, centerX, centerY, trackRadius, startAngle, currentAngle, NVG_CW);
+            nvgStroke(vg);
+        }
+        
+        // Draw knob body with gradient effect
+        
+        // Outer shadow/border
+        nvgBeginPath(vg);
+        nvgCircle(vg, centerX, centerY, knobRadius + 1.0f);
+        nvgFillColor(vg, nvgRGBA(26, 26, 26, 255)); // 0.1f * 255
+        nvgFill(vg);
+        
+        // Main knob body with radial gradient
+        NVGpaint knobGradient = nvgRadialGradient(vg, centerX - 8.0f, centerY - 8.0f, 0.0f, knobRadius,
+                                                  nvgRGBA(153, 153, 153, 255), // 0.6f * 255 - highlight
+                                                  nvgRGBA(115, 115, 115, 255)); // 0.45f * 255 - base
+        nvgBeginPath(vg);
+        nvgCircle(vg, centerX, centerY, knobRadius);
+        nvgFillPaint(vg, knobGradient);
+        nvgFill(vg);
+        
+        // Inner highlight (top-left light)
+        nvgBeginPath(vg);
+        nvgCircle(vg, centerX - 3.0f, centerY - 3.0f, knobRadius * 0.7f);
+        nvgFillColor(vg, nvgRGBA(153, 153, 153, 255)); // 0.6f * 255
+        nvgFill(vg);
+        
+        // Center area
+        nvgBeginPath(vg);
+        nvgCircle(vg, centerX, centerY, knobRadius * 0.8f);
+        nvgFillColor(vg, nvgRGBA(128, 128, 128, 255)); // 0.5f * 255
+        nvgFill(vg);
+        
+        // Calculate white dot position based on physical value
+        float dotX = centerX + cosf(physicalAngle) * dotDistance;
+        float dotY = centerY + sinf(physicalAngle) * dotDistance;
+        
+        // Draw white position dot
+        nvgBeginPath(vg);
+        nvgCircle(vg, dotX, dotY, dotRadius);
+        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
+        nvgFill(vg);
+        
+        // Draw text on knob (center)
+        if (!textOnKnob.empty()) {
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
+            nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+            nvgText(vg, centerX, centerY, textOnKnob.c_str(), nullptr);
+        }
+        
+        // Draw text below knob
+        if (!textBelowKnob.empty()) {
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
+            nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+            nvgText(vg, centerX, centerY + knobRadius + 8.0f, textBelowKnob.c_str(), nullptr);
         }
     }
 };

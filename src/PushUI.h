@@ -21,6 +21,13 @@
 
 // Main PushUI class
 class PushUI {
+public: 
+    // Add mode enum and member
+    enum class Mode {
+        Triggering,
+        Selecting
+    };
+
 private:
     PushUSB& pushDevice;
     ResolumeTracker& resolumeTracker;
@@ -41,11 +48,6 @@ private:
     int lastKnownDeck;
     bool trackingInitialized;
 
-    // Add mode enum and member
-    enum class Mode {
-        Triggering,
-        Selecting
-    };
     Mode mode = Mode::Triggering;
 
     // Encoder position tracking (0.0 = minimum, 1.0 = maximum)
