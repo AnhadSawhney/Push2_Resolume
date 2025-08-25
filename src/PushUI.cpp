@@ -1,6 +1,4 @@
 #include "PushUI.h"
-#include "PushLights.h"
-#include "PushDisplay.h"
 #include <iostream>
 
 PushUI::PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSender> osc)
@@ -9,11 +7,6 @@ PushUI::PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSende
       lastKnownDeck(-1), trackingInitialized(false),
       numLayers(0), numColumns(0), mode(Mode::Triggering)
 {
-    lights = new PushLights(pushDevice);
-    display = new PushDisplay(pushDevice);
-    lights->setParentUI(this);
-    display->setParentUI(this);
-    
     // Initialize encoder positions to center (0.5)
     for (int i = 0; i < 8; i++) {
         encoderPositions[i] = 0.5f;
@@ -21,10 +14,7 @@ PushUI::PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSende
 }
 
 PushUI::~PushUI() {
-    lights->clearAllPads();
-    lights->clearAllButtons();
-    delete lights;
-    delete display;
+    // No more lights management here
 }
 
 bool PushUI::initialize() {
@@ -35,17 +25,8 @@ bool PushUI::initialize() {
     pushDevice.setMidiCallback([this](const PushMidiMessage& msg) {
         this->onMidiMessage(msg);
     });
-    lights->clearAllPads();
-    lights->clearAllButtons();
     std::cout << "PushUI initialized successfully" << std::endl;
     return true;
-}
-
-void PushUI::update() {
-    //resolumeTracker.update();
-    lights->updateLights();
-    display->update();
-    display->sendToDevice();
 }
 
 void PushUI::toggleMode() {
@@ -161,11 +142,6 @@ void PushUI::onMidiMessage(const PushMidiMessage& msg) {
 
         handleNavigationButtons(cc, value);
     }
-}
-
-void PushUI::forceRefresh() {
-    lights->forceRefresh();
-    lights->updateLights();
 }
 
 void PushUI::handlePadPress(int note, int velocity) {
@@ -316,11 +292,6 @@ void PushUI::handleEncoderButtonPress(int encoderIndex) {
     // TODO: Handle encoder button press event  
     // This is called when button above encoder is pressed (CC102-109)
     std::cout << "Encoder button " << encoderIndex << " pressed, position: " << encoderPositions[encoderIndex] << std::endl;
-}
-
-float PushUI::getEncoderPosition(int encoderIndex) const {
-    if (encoderIndex < 0 || encoderIndex >= 8) return 0.0f;
-    return encoderPositions[encoderIndex];
 }
 
 /*

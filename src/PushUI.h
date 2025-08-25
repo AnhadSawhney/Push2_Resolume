@@ -19,21 +19,12 @@
 //#include "ResolumeTrackerREST.h"
 #include "ResolumeTrackerOSC.h"
 
-// Forward declarations for OSC functionality
-
-class PushLights;
-class PushDisplay;
-
 // Main PushUI class
 class PushUI {
-    friend class PushLights;
-    friend class PushDisplay;
 private:
     PushUSB& pushDevice;
     ResolumeTracker& resolumeTracker;
     std::shared_ptr<OSCSender> oscSender; // Changed from unique_ptr
-    PushLights* lights;
-    PushDisplay* display;
     int columnOffset;
     int layerOffset;
     int numLayers;  // Total number of layers in the current deck
@@ -64,27 +55,30 @@ public:
     PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSender> osc = nullptr);
     ~PushUI();
     bool initialize();
-    void update();
     void onMidiMessage(const PushMidiMessage& msg);
-    void forceRefresh();
+    
+    // Public getters for PushDisplay and PushLights to read state
+    Mode getMode() const { return mode; }
+    float getEncoderPosition(int index) const { 
+        if (index >= 0 && index < 8) return encoderPositions[index];
+        return 0.0f;
+    }
+    int getColumnOffset() const { return columnOffset; }
+    int getLayerOffset() const { return layerOffset; }
+    int getNumLayers() const { return numLayers; }
+    int getNumColumns() const { return numColumns; }
+    ResolumeTracker& getResolumeTracker() { return resolumeTracker; }
+    PushUSB& getPushDevice() { return pushDevice; } // For lights that need direct device access
     OSCSender* getOSCSender() const { return oscSender.get(); }
 
     // Mode accessors
-    Mode getMode() const { return mode; }
     void setMode(Mode m) { mode = m; }
     void toggleMode();
-
-    int getColumnOffset() const { return columnOffset; }
-    int getLayerOffset() const { return layerOffset; }
-    int getNumLayers() const { return resolumeTracker.getLayerCount(); }
-    int getNumColumns() const { return resolumeTracker.getColumnCount(); }
-    ResolumeTracker& getResolumeTracker() { return resolumeTracker; }
 
     // Encoder position tracking methods
     void updateEncoderPosition(int encoderIndex, int relativeValue);
     void handleEncoderTouch(int encoderIndex);
     void handleEncoderButtonPress(int encoderIndex);
-    float getEncoderPosition(int encoderIndex) const;
 
 private:
     void handlePadPress(int note, int velocity);

@@ -123,7 +123,7 @@ private:
     }
 
 public:
-    PushLights(PushUSB& push) : pushDevice(push), parentUI(nullptr), lightsInitialized(false) {
+    PushLights(PushUSB& push, PushUI* ui = nullptr) : pushDevice(push), parentUI(ui), lightsInitialized(false) {
         for (int i = 0; i < 64; ++i) currentPadPaletteIndices[i] = PALETTE_BLACK;
         for (int i = 0; i < 120; ++i) currentButtonPaletteIndices[i] = 0;
         for (int i = 0; i < 31; ++i) currentTouchStripLEDs[i] = 0;
@@ -317,7 +317,7 @@ public:
             int layerIdx = parentUI->getLayerOffset() + i + 1; // 1-based layer
 
             Color color = Color::BLACK;
-            if (layerIdx <= numLayers && numLayers > 0 && parentUI->resolumeTracker.doesLayerExist(layerIdx)) {
+            if (layerIdx <= numLayers && numLayers > 0 && parentUI->getResolumeTracker().doesLayerExist(layerIdx)) {
                 auto layerObj = parentUI->getResolumeTracker().getLayer(layerIdx);
                 int crossfaderGroup = layerObj->properties.getInt("crossfadergroup");
 
@@ -361,11 +361,11 @@ public:
                 Color padColor = Color::BLACK;
                 //if (parentUI->resolumeTracker.getLayer(resolumeLayer)->getPlayingId() == resolumeColumn) {
                 
-                if (parentUI->resolumeTracker.doesClipExist(resolumeColumn, resolumeLayer)) {
+                if (parentUI->getResolumeTracker().doesClipExist(resolumeColumn, resolumeLayer)) {
                     padColor = Color::WHITE;
                 } 
 
-                if (parentUI->resolumeTracker.isClipPlaying(resolumeColumn, resolumeLayer)) {
+                if (parentUI->getResolumeTracker().isClipPlaying(resolumeColumn, resolumeLayer)) {
                     // Lit up according to column number (rainbow)
                     float hue = (float)(resolumeColumn - 1) * 360.0f / ((float)numColumns);
                     padColor = Color::fromHSV(hue, 1.0f, 1.0f);

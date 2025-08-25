@@ -11,6 +11,8 @@
 #include "OSCSender.h"
 #include "PushUI.h"
 #include "PushUSB.h"
+#include "PushDisplay.h"
+#include "PushLights.h"
 //#include "ResolumeTrackerREST.h"
 #include "ResolumeTrackerOSC.h"
 #include "OSCListener.h"
@@ -64,13 +66,13 @@ int main(int argc, char* argv[]) {
         ResolumeTracker resolumeTracker(&listener);
 
         // 4. Initialize Push 2 connection
-        PushUSB push;
-        if (!push.initialize()) {
+        PushUSB pushUSB;
+        if (!pushUSB.initialize()) {
             std::cerr << "Failed to initialize Push 2 MIDI" << std::endl;
             return 1;
         }
         
-        bool pushConnected = push.connect();
+        bool pushConnected = pushUSB.connect();
         if (pushConnected) {
             std::cout << "Push 2 connected successfully!" << std::endl;
         } else {
@@ -80,10 +82,10 @@ int main(int argc, char* argv[]) {
         // 5. Create PushUI (only if Push is connected)
         std::unique_ptr<PushUI> pushUI;
         if (pushConnected) {
-            pushUI = std::make_unique<PushUI>(push, resolumeTracker, oscSender);
+            pushUI = std::make_unique<PushUI>(pushUSB, resolumeTracker, oscSender);
 
             // Set up MIDI callback to handle Push 2 input
-            push.setMidiCallback([&pushUI](const PushMidiMessage& msg) {
+            pushUSB.setMidiCallback([&pushUI](const PushMidiMessage& msg) {
                 if (pushUI) {
                     pushUI->onMidiMessage(msg);
                 }
@@ -93,6 +95,8 @@ int main(int argc, char* argv[]) {
                 std::cerr << "Failed to initialize Push UI" << std::endl;
                 pushUI.reset();
                 pushConnected = false;
+            } else {
+                std::cout << "PushUI created successfully - PushDisplay and PushLights will be created in their respective threads" << std::endl;
             }
         }
 
@@ -114,22 +118,102 @@ int main(int argc, char* argv[]) {
             }
         });
         
-        // Main update loop
-        std::thread updateThread([&pushUI, &shouldStop]() {
-            constexpr int frameTimeMs = 1000 / 10; // ~100ms per frame for 10fps
+        // PushLights thread (15fps)
+        std::thread lightsThread([&pushUSB, &pushUI, &shouldStop]() {
+            if (!pushUI) return; // Early exit if no PushUI
+            
+            // Create PushLights in this thread
+            std::unique_ptr<PushLights> pushLights = std::make_unique<PushLights>(pushUSB, pushUI.get());
+            std::cout << "PushLights created in lights thread" << std::endl;
+            
+            constexpr int targetFps = 15;
+            constexpr int frameTimeMs = 1000 / targetFps;
+            auto lastFpsCheck = std::chrono::steady_clock::now();
+            int frameCount = 0;
+            
             while (!shouldStop.load()) {
-                auto start = std::chrono::steady_clock::now();
-                if (pushUI) {
-                    pushUI->update();
-                }
+                auto frameStart = std::chrono::steady_clock::now();
+                
+                pushLights->updateLights();
+                
+                frameCount++;
+                
                 auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - start
+                    std::chrono::steady_clock::now() - frameStart
                 ).count();
+                
+                // Calculate actual FPS every second
+                auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    frameStart - lastFpsCheck
+                ).count();
+                
+                if (timeSinceLastCheck >= 1000) {
+                    float actualFps = frameCount * 1000.0f / timeSinceLastCheck;
+                    if (actualFps < targetFps - 1) { // More than 1 FPS below target
+                        std::cout << "PushLights running slow: " << actualFps << " fps (target: " << targetFps << ")" << std::endl;
+                    }
+                    frameCount = 0;
+                    lastFpsCheck = frameStart;
+                }
+                
                 int sleepMs = frameTimeMs - static_cast<int>(elapsed);
                 if (sleepMs > 0) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
                 }
             }
+            
+            // Clean up lights when thread exits
+            pushLights->clearAllPads();
+            pushLights->clearAllButtons();
+            std::cout << "PushLights thread exiting" << std::endl;
+        });
+        
+        // PushDisplay thread (60fps)
+        std::thread displayThread([&pushUSB, &pushUI, &shouldStop]() {
+            if (!pushUI) return; // Early exit if no PushUI
+            
+            // Create PushDisplay in this thread
+            std::unique_ptr<PushDisplay> pushDisplay = std::make_unique<PushDisplay>(pushUSB, pushUI.get());
+            std::cout << "PushDisplay created in display thread" << std::endl;
+            
+            constexpr int targetFps = 60;
+            constexpr int frameTimeMs = 1000 / targetFps;
+            auto lastFpsCheck = std::chrono::steady_clock::now();
+            int frameCount = 0;
+            
+            while (!shouldStop.load()) {
+                auto frameStart = std::chrono::steady_clock::now();
+                
+                pushDisplay->update();
+                pushDisplay->sendToDevice();
+                
+                frameCount++;
+                
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - frameStart
+                ).count();
+                
+                // Calculate actual FPS every second
+                auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    frameStart - lastFpsCheck
+                ).count();
+                
+                if (timeSinceLastCheck >= 1000) {
+                    float actualFps = frameCount * 1000.0f / timeSinceLastCheck;
+                    if (actualFps < targetFps - 5) { // More than 5 FPS below target
+                        std::cout << "PushDisplay running slow: " << actualFps << " fps (target: " << targetFps << ")" << std::endl;
+                    }
+                    frameCount = 0;
+                    lastFpsCheck = frameStart;
+                }
+                
+                int sleepMs = frameTimeMs - static_cast<int>(elapsed);
+                if (sleepMs > 0) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+                }
+            }
+            
+            std::cout << "PushDisplay thread exiting" << std::endl;
         });
         
         // If in livetree mode, run the live tree display loop and exit
@@ -162,8 +246,8 @@ int main(int argc, char* argv[]) {
                 resolumeTracker.print();
             } else if (input=="refresh") {
                 std::cout << "Forcing Push UI refresh" << std::endl;
-                pushUI->forceRefresh();
-                pushUI->update();
+                //pushUI->forceRefresh();
+                // Refresh will be handled automatically by the separate threads
             } else if (input == "help") {
                 std::cout << "\nAvailable commands:" << std::endl;
                 std::cout << "  q/Q      - Quit the program" << std::endl;
@@ -200,11 +284,17 @@ int main(int argc, char* argv[]) {
         }
         
         shouldStop.store(true);
+        
+        // No need to clean up lights here - they're cleaned up in their respective threads
+        
         if (oscThread.joinable()) {
             oscThread.join();
         }
-        if (updateThread.joinable()) {
-            updateThread.join();
+        if (lightsThread.joinable()) {
+            lightsThread.join();
+        }
+        if (displayThread.joinable()) {
+            displayThread.join();
         }
         
         std::cout << "Push2-Resolume Controller stopped." << std::endl;

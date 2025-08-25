@@ -1,0 +1,169 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4
+					]
+				},
+				{
+					"build" : "include/glfw",
+					"childIndexes" : 
+					[
+						2
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-include.glfw-Debug-23c3e8bab34e49df4303.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "include/glfw",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "include/glfw/src",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-include.glfw.src-Debug-43b1264a66f7e24bc50b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 1,
+					"source" : "include/glfw/src",
+					"targetIndexes" : 
+					[
+						0,
+						6
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "push2_resolume",
+					"targetIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1,
+						2
+					],
+					"name" : "GLFW",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						0,
+						5,
+						6
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 2,
+					"id" : "glfw::@7cf4cdf8cc575720cdf7",
+					"jsonFile" : "target-glfw-Debug-f2a355f3beb398be0be7.json",
+					"name" : "glfw",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "nanovg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-nanovg-Debug-ab1e2211af52618d5bdb.json",
+					"name" : "nanovg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "oscpack::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-oscpack-Debug-34960729bce3afe2d7f8.json",
+					"name" : "oscpack",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "push2_resolume::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-push2_resolume-Debug-ff4a58dc25eb58e75300.json",
+					"name" : "push2_resolume",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "rtmidi_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-rtmidi_static-Debug-56bba08d162af72a2050.json",
+					"name" : "rtmidi_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "uninstall::@11f96312bf0093c46211",
+					"jsonFile" : "target-uninstall-Debug-390b4808c71585ccad14.json",
+					"name" : "uninstall",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "update_mappings::@7cf4cdf8cc575720cdf7",
+					"jsonFile" : "target-update_mappings-Debug-5d5777e2029bc689ae05.json",
+					"name" : "update_mappings",
+					"projectIndex" : 1
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/out/build/x64-debug",
+		"source" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

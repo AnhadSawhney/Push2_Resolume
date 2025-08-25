@@ -47,19 +47,30 @@ cmake_ninja_workdir = C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\buil
 #############################################
 # Order-only phony target for push2_resolume
 
-build cmake_object_order_depends_target_push2_resolume: phony || cmake_object_order_depends_target_oscpack cmake_object_order_depends_target_rtmidi_static
+build cmake_object_order_depends_target_push2_resolume: phony || cmake_object_order_depends_target_glfw cmake_object_order_depends_target_nanovg cmake_object_order_depends_target_oscpack cmake_object_order_depends_target_rtmidi_static
 
 build CMakeFiles\push2_resolume.dir\src\PushUI.cpp.obj: CXX_COMPILER__push2_resolume_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src\PushUI.cpp || cmake_object_order_depends_target_push2_resolume
+  DEFINES = -DNANOVG_GL3
   FLAGS = /DWIN32 /D_WINDOWS /W4 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI
-  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\ip -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\osc -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\nanovg\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\ip -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\osc -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src
+  OBJECT_DIR = CMakeFiles\push2_resolume.dir
+  OBJECT_FILE_DIR = CMakeFiles\push2_resolume.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\push2_resolume.dir\
+  TARGET_PDB = push2_resolume.pdb
+
+build CMakeFiles\push2_resolume.dir\src\nanovg_impl.cpp.obj: CXX_COMPILER__push2_resolume_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src\nanovg_impl.cpp || cmake_object_order_depends_target_push2_resolume
+  DEFINES = -DNANOVG_GL3
+  FLAGS = /DWIN32 /D_WINDOWS /W4 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\nanovg\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\ip -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\osc -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src
   OBJECT_DIR = CMakeFiles\push2_resolume.dir
   OBJECT_FILE_DIR = CMakeFiles\push2_resolume.dir\src
   TARGET_COMPILE_PDB = CMakeFiles\push2_resolume.dir\
   TARGET_PDB = push2_resolume.pdb
 
 build CMakeFiles\push2_resolume.dir\src\push2_resolume.cpp.obj: CXX_COMPILER__push2_resolume_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src\push2_resolume.cpp || cmake_object_order_depends_target_push2_resolume
+  DEFINES = -DNANOVG_GL3
   FLAGS = /DWIN32 /D_WINDOWS /W4 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI
-  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\ip -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\osc -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\nanovg\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\ip -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\osc -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src
   OBJECT_DIR = CMakeFiles\push2_resolume.dir
   OBJECT_FILE_DIR = CMakeFiles\push2_resolume.dir\src
   TARGET_COMPILE_PDB = CMakeFiles\push2_resolume.dir\
@@ -73,10 +84,10 @@ build CMakeFiles\push2_resolume.dir\src\push2_resolume.cpp.obj: CXX_COMPILER__pu
 #############################################
 # Link the executable push2_resolume.exe
 
-build push2_resolume.exe: CXX_EXECUTABLE_LINKER__push2_resolume_Debug CMakeFiles\push2_resolume.dir\src\PushUI.cpp.obj CMakeFiles\push2_resolume.dir\src\push2_resolume.cpp.obj | C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\lib\libusb-1.0.lib rtmidi_static.lib oscpack.lib || oscpack.lib rtmidi_static.lib
+build push2_resolume.exe: CXX_EXECUTABLE_LINKER__push2_resolume_Debug CMakeFiles\push2_resolume.dir\src\PushUI.cpp.obj CMakeFiles\push2_resolume.dir\src\nanovg_impl.cpp.obj CMakeFiles\push2_resolume.dir\src\push2_resolume.cpp.obj | C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\lib\libusb-1.0.lib rtmidi_static.lib include\glfw\src\glfw3.lib nanovg.lib oscpack.lib || include\glfw\src\glfw3.lib nanovg.lib oscpack.lib rtmidi_static.lib
   FLAGS = /DWIN32 /D_WINDOWS /W4 /GR /EHsc /MDd /Ob0 /Od /RTC1 -ZI
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
-  LINK_LIBRARIES = C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\lib\libusb-1.0.lib  rtmidi_static.lib  winmm.lib  oscpack.lib  Ws2_32.lib  winmm.lib  Ws2_32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  LINK_LIBRARIES = C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\lib\libusb-1.0.lib  rtmidi_static.lib  winmm.lib  include\glfw\src\glfw3.lib  nanovg.lib  opengl32.lib  oscpack.lib  Ws2_32.lib  winmm.lib  opengl32.lib  Ws2_32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
   OBJECT_DIR = CMakeFiles\push2_resolume.dir
   POST_BUILD = cd .
   PRE_LINK = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug && ( taskkill /F /IM push2_resolume.exe /T 2>nul || echo Process not running ) && cd C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug"
@@ -204,6 +215,51 @@ build oscpack.lib: CXX_STATIC_LIBRARY_LINKER__oscpack_Debug CMakeFiles\oscpack.d
   TARGET_FILE = oscpack.lib
   TARGET_PDB = oscpack.pdb
 
+# =============================================================================
+# Object build statements for STATIC_LIBRARY target nanovg
+
+
+#############################################
+# Order-only phony target for nanovg
+
+build cmake_object_order_depends_target_nanovg: phony || .
+
+build CMakeFiles\nanovg.dir\include\nanovg\src\nanovg.c.obj: C_COMPILER__nanovg_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\nanovg\src\nanovg.c || cmake_object_order_depends_target_nanovg
+  DEFINES = -DNANOVG_GL3
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\nanovg\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include
+  OBJECT_DIR = CMakeFiles\nanovg.dir
+  OBJECT_FILE_DIR = CMakeFiles\nanovg.dir\include\nanovg\src
+  TARGET_COMPILE_PDB = CMakeFiles\nanovg.dir\nanovg.pdb
+  TARGET_PDB = nanovg.pdb
+
+build CMakeFiles\nanovg.dir\src\nanovg_impl.cpp.obj: CXX_COMPILER__nanovg_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\src\nanovg_impl.cpp || cmake_object_order_depends_target_nanovg
+  DEFINES = -DNANOVG_GL3
+  FLAGS = /DWIN32 /D_WINDOWS /W4 /GR /EHsc /MDd /Ob0 /Od /RTC1 -ZI
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\nanovg\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include
+  OBJECT_DIR = CMakeFiles\nanovg.dir
+  OBJECT_FILE_DIR = CMakeFiles\nanovg.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\nanovg.dir\nanovg.pdb
+  TARGET_PDB = nanovg.pdb
+
+
+# =============================================================================
+# Link build statements for STATIC_LIBRARY target nanovg
+
+
+#############################################
+# Link the static library nanovg.lib
+
+build nanovg.lib: CXX_STATIC_LIBRARY_LINKER__nanovg_Debug CMakeFiles\nanovg.dir\include\nanovg\src\nanovg.c.obj CMakeFiles\nanovg.dir\src\nanovg_impl.cpp.obj
+  LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /W4 /GR /EHsc /MDd /Ob0 /Od /RTC1 -ZI
+  LINK_FLAGS = /machine:x64
+  OBJECT_DIR = CMakeFiles\nanovg.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = CMakeFiles\nanovg.dir\nanovg.pdb
+  TARGET_FILE = nanovg.lib
+  TARGET_PDB = nanovg.pdb
+
 
 #############################################
 # Utility command for edit_cache
@@ -228,14 +284,415 @@ build CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
 
 build rebuild_cache: phony CMakeFiles\rebuild_cache.util
 
+
+#############################################
+# Utility command for list_install_components
+
+build list_install_components: phony
+
+
+#############################################
+# Utility command for install
+
+build CMakeFiles\install.util: CUSTOM_COMMAND all
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug && "C:\Program Files\CMake\bin\cmake.exe" -P cmake_install.cmake"
+  DESC = Install the project...
+  pool = console
+  restat = 1
+
+build install: phony CMakeFiles\install.util
+
+
+#############################################
+# Utility command for install/local
+
+build CMakeFiles\install\local.util: CUSTOM_COMMAND all
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug && "C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
+  DESC = Installing only the local directory...
+  pool = console
+  restat = 1
+
+build install\local: phony CMakeFiles\install\local.util
+
+# =============================================================================
+# Write statements declared in CMakeLists.txt:
+# C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/CMakeLists.txt
+# =============================================================================
+
+
+#############################################
+# Utility command for uninstall
+
+build include\glfw\uninstall: phony include\glfw\CMakeFiles\uninstall
+
+
+#############################################
+# Utility command for edit_cache
+
+build include\glfw\CMakeFiles\edit_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw && "C:\Program Files\CMake\bin\cmake-gui.exe" -SC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -BC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug"
+  DESC = Running CMake cache editor...
+  pool = console
+  restat = 1
+
+build include\glfw\edit_cache: phony include\glfw\CMakeFiles\edit_cache.util
+
+
+#############################################
+# Utility command for rebuild_cache
+
+build include\glfw\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw && "C:\Program Files\CMake\bin\cmake.exe" --regenerate-during-build -SC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -BC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug"
+  DESC = Running CMake to regenerate build system...
+  pool = console
+  restat = 1
+
+build include\glfw\rebuild_cache: phony include\glfw\CMakeFiles\rebuild_cache.util
+
+
+#############################################
+# Utility command for list_install_components
+
+build include\glfw\list_install_components: phony
+
+
+#############################################
+# Utility command for install
+
+build include\glfw\CMakeFiles\install.util: CUSTOM_COMMAND include\glfw\all
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw && "C:\Program Files\CMake\bin\cmake.exe" -P cmake_install.cmake"
+  DESC = Install the project...
+  pool = console
+  restat = 1
+
+build include\glfw\install: phony include\glfw\CMakeFiles\install.util
+
+
+#############################################
+# Utility command for install/local
+
+build include\glfw\CMakeFiles\install\local.util: CUSTOM_COMMAND include\glfw\all
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw && "C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
+  DESC = Installing only the local directory...
+  pool = console
+  restat = 1
+
+build include\glfw\install\local: phony include\glfw\CMakeFiles\install\local.util
+
+
+#############################################
+# Custom command for include\glfw\CMakeFiles\uninstall
+
+build include\glfw\CMakeFiles\uninstall | ${cmake_ninja_workdir}include\glfw\CMakeFiles\uninstall: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw && "C:\Program Files\CMake\bin\cmake.exe" -P C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/out/build/x64-debug/include/glfw/cmake_uninstall.cmake"
+
+# =============================================================================
+# Write statements declared in CMakeLists.txt:
+# C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/include/glfw/CMakeLists.txt
+# =============================================================================
+
+# =============================================================================
+# Object build statements for STATIC_LIBRARY target glfw
+
+
+#############################################
+# Order-only phony target for glfw
+
+build cmake_object_order_depends_target_glfw: phony || .
+
+build include\glfw\src\CMakeFiles\glfw.dir\context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\context.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\init.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\init.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\input.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\input.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\monitor.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\monitor.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\platform.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\platform.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\vulkan.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\vulkan.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\window.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\window.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\egl_context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\egl_context.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\osmesa_context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\osmesa_context.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\null_init.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\null_init.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\null_monitor.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\null_monitor.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\null_window.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\null_window.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\null_joystick.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\null_joystick.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\win32_module.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\win32_module.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\win32_time.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\win32_time.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\win32_thread.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\win32_thread.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\win32_init.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\win32_init.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\win32_joystick.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\win32_joystick.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\win32_monitor.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\win32_monitor.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\win32_window.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\win32_window.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+build include\glfw\src\CMakeFiles\glfw.dir\wgl_context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\wgl_context.c || cmake_object_order_depends_target_glfw
+  DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI /W3
+  INCLUDES = -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\include -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src -IC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  OBJECT_FILE_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+
+# =============================================================================
+# Link build statements for STATIC_LIBRARY target glfw
+
+
+#############################################
+# Link the static library include\glfw\src\glfw3.lib
+
+build include\glfw\src\glfw3.lib: C_STATIC_LIBRARY_LINKER__glfw_Debug include\glfw\src\CMakeFiles\glfw.dir\context.c.obj include\glfw\src\CMakeFiles\glfw.dir\init.c.obj include\glfw\src\CMakeFiles\glfw.dir\input.c.obj include\glfw\src\CMakeFiles\glfw.dir\monitor.c.obj include\glfw\src\CMakeFiles\glfw.dir\platform.c.obj include\glfw\src\CMakeFiles\glfw.dir\vulkan.c.obj include\glfw\src\CMakeFiles\glfw.dir\window.c.obj include\glfw\src\CMakeFiles\glfw.dir\egl_context.c.obj include\glfw\src\CMakeFiles\glfw.dir\osmesa_context.c.obj include\glfw\src\CMakeFiles\glfw.dir\null_init.c.obj include\glfw\src\CMakeFiles\glfw.dir\null_monitor.c.obj include\glfw\src\CMakeFiles\glfw.dir\null_window.c.obj include\glfw\src\CMakeFiles\glfw.dir\null_joystick.c.obj include\glfw\src\CMakeFiles\glfw.dir\win32_module.c.obj include\glfw\src\CMakeFiles\glfw.dir\win32_time.c.obj include\glfw\src\CMakeFiles\glfw.dir\win32_thread.c.obj include\glfw\src\CMakeFiles\glfw.dir\win32_init.c.obj include\glfw\src\CMakeFiles\glfw.dir\win32_joystick.c.obj include\glfw\src\CMakeFiles\glfw.dir\win32_monitor.c.obj include\glfw\src\CMakeFiles\glfw.dir\win32_window.c.obj include\glfw\src\CMakeFiles\glfw.dir\wgl_context.c.obj
+  LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Ob0 /Od /RTC1 -ZI
+  LINK_FLAGS = /machine:x64
+  OBJECT_DIR = include\glfw\src\CMakeFiles\glfw.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = include\glfw\src\CMakeFiles\glfw.dir\glfw.pdb
+  TARGET_FILE = include\glfw\src\glfw3.lib
+  TARGET_PDB = include\glfw\src\glfw3.pdb
+
+
+#############################################
+# Utility command for update_mappings
+
+build include\glfw\src\update_mappings: phony include\glfw\src\CMakeFiles\update_mappings
+
+
+#############################################
+# Utility command for edit_cache
+
+build include\glfw\src\CMakeFiles\edit_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src && "C:\Program Files\CMake\bin\cmake-gui.exe" -SC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -BC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug"
+  DESC = Running CMake cache editor...
+  pool = console
+  restat = 1
+
+build include\glfw\src\edit_cache: phony include\glfw\src\CMakeFiles\edit_cache.util
+
+
+#############################################
+# Utility command for rebuild_cache
+
+build include\glfw\src\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src && "C:\Program Files\CMake\bin\cmake.exe" --regenerate-during-build -SC:\Users\Anhad\Documents-Unsynced\Push2-Resolume -BC:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug"
+  DESC = Running CMake to regenerate build system...
+  pool = console
+  restat = 1
+
+build include\glfw\src\rebuild_cache: phony include\glfw\src\CMakeFiles\rebuild_cache.util
+
+
+#############################################
+# Utility command for list_install_components
+
+build include\glfw\src\list_install_components: phony
+
+
+#############################################
+# Utility command for install
+
+build include\glfw\src\CMakeFiles\install.util: CUSTOM_COMMAND include\glfw\src\all
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src && "C:\Program Files\CMake\bin\cmake.exe" -P cmake_install.cmake"
+  DESC = Install the project...
+  pool = console
+  restat = 1
+
+build include\glfw\src\install: phony include\glfw\src\CMakeFiles\install.util
+
+
+#############################################
+# Utility command for install/local
+
+build include\glfw\src\CMakeFiles\install\local.util: CUSTOM_COMMAND include\glfw\src\all
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\out\build\x64-debug\include\glfw\src && "C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
+  DESC = Installing only the local directory...
+  pool = console
+  restat = 1
+
+build include\glfw\src\install\local: phony include\glfw\src\CMakeFiles\install\local.util
+
+
+#############################################
+# Custom command for include\glfw\src\CMakeFiles\update_mappings
+
+build include\glfw\src\CMakeFiles\update_mappings | ${cmake_ninja_workdir}include\glfw\src\CMakeFiles\update_mappings: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src && "C:\Program Files\CMake\bin\cmake.exe" -P C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/include/glfw/CMake/GenerateMappings.cmake mappings.h.in mappings.h"
+  DESC = Updating gamepad mappings from upstream repository
+
 # =============================================================================
 # Target aliases.
+
+build glfw: phony include\glfw\src\glfw3.lib
+
+build glfw3.lib: phony include\glfw\src\glfw3.lib
+
+build nanovg: phony nanovg.lib
 
 build oscpack: phony oscpack.lib
 
 build push2_resolume: phony push2_resolume.exe
 
 build rtmidi_static: phony rtmidi_static.lib
+
+build uninstall: phony include\glfw\uninstall
+
+build update_mappings: phony include\glfw\src\update_mappings
 
 # =============================================================================
 # Folder targets.
@@ -245,7 +702,21 @@ build rtmidi_static: phony rtmidi_static.lib
 #############################################
 # Folder: C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/out/build/x64-debug
 
-build all: phony push2_resolume.exe rtmidi_static.lib oscpack.lib
+build all: phony push2_resolume.exe rtmidi_static.lib oscpack.lib nanovg.lib include\glfw\all
+
+# =============================================================================
+
+#############################################
+# Folder: C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/out/build/x64-debug/include/glfw
+
+build include\glfw\all: phony include\glfw\src\all
+
+# =============================================================================
+
+#############################################
+# Folder: C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/out/build/x64-debug/include/glfw/src
+
+build include\glfw\src\all: phony include\glfw\src\glfw3.lib
 
 # =============================================================================
 # Built-in targets
@@ -254,14 +725,14 @@ build all: phony push2_resolume.exe rtmidi_static.lib oscpack.lib
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCXXInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeGenericSystem.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeRCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCXXLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCommonLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-Initialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\WindowsPaths.cmake C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\CMakeLists.txt CMakeCache.txt CMakeFiles\3.31.2\CMakeCCompiler.cmake CMakeFiles\3.31.2\CMakeCXXCompiler.cmake CMakeFiles\3.31.2\CMakeRCCompiler.cmake CMakeFiles\3.31.2\CMakeSystem.cmake
+build build.ninja: RERUN_CMAKE | C$:\Program$ Files\CMake\share\cmake-3.31\Modules\BasicConfigVersion-SameMajorVersion.cmake.in C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCXXInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeDependentOption.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeGenericSystem.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakePackageConfigHelpers.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeRCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CheckCSourceCompiles.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CheckIncludeFile.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CheckLibraryExists.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\FindPackageHandleStandardArgs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\FindPackageMessage.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\FindThreads.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\GNUInstallDirs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCXXLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCommonLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CheckSourceCompiles.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-Initialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\WindowsPaths.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\WriteBasicConfigVersionFile.cmake C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\CMakeLists.txt C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMakeLists.txt C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMake\cmake_uninstall.cmake.in C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMake\glfw3.pc.in C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMake\glfw3Config.cmake.in C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\CMakeLists.txt CMakeCache.txt CMakeFiles\3.31.2\CMakeCCompiler.cmake CMakeFiles\3.31.2\CMakeCXXCompiler.cmake CMakeFiles\3.31.2\CMakeRCCompiler.cmake CMakeFiles\3.31.2\CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCXXInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeGenericSystem.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeRCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCXXLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCommonLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-Initialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\WindowsPaths.cmake C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\CMakeLists.txt CMakeCache.txt CMakeFiles\3.31.2\CMakeCCompiler.cmake CMakeFiles\3.31.2\CMakeCXXCompiler.cmake CMakeFiles\3.31.2\CMakeRCCompiler.cmake CMakeFiles\3.31.2\CMakeSystem.cmake: phony
+build C$:\Program$ Files\CMake\share\cmake-3.31\Modules\BasicConfigVersion-SameMajorVersion.cmake.in C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCXXInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeDependentOption.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeGenericSystem.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakePackageConfigHelpers.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeRCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CheckCSourceCompiles.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CheckIncludeFile.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\CheckLibraryExists.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Compiler\MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\FindPackageHandleStandardArgs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\FindPackageMessage.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\FindThreads.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\GNUInstallDirs.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCXXLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CMakeCommonLinkerInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Internal\CheckSourceCompiles.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Linker\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-Initialize.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\Windows.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\Platform\WindowsPaths.cmake C$:\Program$ Files\CMake\share\cmake-3.31\Modules\WriteBasicConfigVersionFile.cmake C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\CMakeLists.txt C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMakeLists.txt C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMake\cmake_uninstall.cmake.in C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMake\glfw3.pc.in C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\CMake\glfw3Config.cmake.in C$:\Users\Anhad\Documents-Unsynced\Push2-Resolume\include\glfw\src\CMakeLists.txt CMakeCache.txt CMakeFiles\3.31.2\CMakeCCompiler.cmake CMakeFiles\3.31.2\CMakeCXXCompiler.cmake CMakeFiles\3.31.2\CMakeRCCompiler.cmake CMakeFiles\3.31.2\CMakeSystem.cmake: phony
 
 
 #############################################

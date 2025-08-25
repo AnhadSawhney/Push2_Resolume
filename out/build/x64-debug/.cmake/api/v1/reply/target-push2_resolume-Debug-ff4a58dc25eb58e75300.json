@@ -16,6 +16,7 @@
 			"add_executable",
 			"target_link_libraries",
 			"TARGET_LINK_LIBRARIES",
+			"target_compile_definitions",
 			"INCLUDE_DIRECTORIES",
 			"target_include_directories",
 			"set_property"
@@ -32,43 +33,49 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 26,
+				"line" : 37,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 59,
+				"line" : 69,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 60,
+				"line" : 70,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 94,
+				"line" : 104,
 				"parent" : 0
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 11,
+				"line" : 124,
 				"parent" : 0
 			},
 			{
 				"command" : 4,
 				"file" : 0,
-				"line" : 104,
+				"line" : 11,
 				"parent" : 0
 			},
 			{
 				"command" : 5,
 				"file" : 0,
-				"line" : 99,
+				"line" : 114,
+				"parent" : 0
+			},
+			{
+				"command" : 6,
+				"file" : 0,
+				"line" : 109,
 				"parent" : 0
 			}
 		]
@@ -82,26 +89,41 @@
 					"fragment" : "/DWIN32 /D_WINDOWS /W4 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI"
 				}
 			],
-			"includes" : 
+			"defines" : 
 			[
 				{
 					"backtrace" : 5,
+					"define" : "NANOVG_GL3"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 6,
 					"path" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 7,
 					"path" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/include"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 7,
+					"path" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/include/glfw/include"
+				},
+				{
+					"backtrace" : 7,
+					"path" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/include/nanovg/src"
+				},
+				{
+					"backtrace" : 7,
 					"path" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/ip"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 7,
 					"path" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/osc"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 7,
 					"path" : "C:/Users/Anhad/Documents-Unsynced/Push2-Resolume/src"
 				}
 			],
@@ -110,26 +132,35 @@
 			{
 				"backtraces" : 
 				[
-					7
+					8
 				],
 				"standard" : "20"
 			},
 			"sourceIndexes" : 
 			[
 				0,
-				1
+				1,
+				2
 			]
 		}
 	],
 	"dependencies" : 
 	[
 		{
+			"backtrace" : 4,
+			"id" : "oscpack::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "nanovg::@6890427a1f51a3e7e1df"
+		},
+		{
 			"backtrace" : 3,
 			"id" : "rtmidi_static::@6890427a1f51a3e7e1df"
 		},
 		{
-			"backtrace" : 4,
-			"id" : "oscpack::@6890427a1f51a3e7e1df"
+			"backtrace" : 3,
+			"id" : "glfw::@7cf4cdf8cc575720cdf7"
 		}
 	],
 	"id" : "push2_resolume::@6890427a1f51a3e7e1df",
@@ -161,6 +192,21 @@
 				"role" : "libraries"
 			},
 			{
+				"backtrace" : 3,
+				"fragment" : "include\\glfw\\src\\glfw3.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
+				"fragment" : "nanovg.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
+				"fragment" : "opengl32.lib",
+				"role" : "libraries"
+			},
+			{
 				"backtrace" : 4,
 				"fragment" : "oscpack.lib",
 				"role" : "libraries"
@@ -173,6 +219,11 @@
 			{
 				"backtrace" : 3,
 				"fragment" : "winmm.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
+				"fragment" : "opengl32.lib",
 				"role" : "libraries"
 			},
 			{
@@ -201,7 +252,8 @@
 			"sourceIndexes" : 
 			[
 				0,
-				1
+				1,
+				2
 			]
 		}
 	],
@@ -211,6 +263,12 @@
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
 			"path" : "src/PushUI.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/nanovg_impl.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{

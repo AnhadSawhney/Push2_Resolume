@@ -1,192 +1,247 @@
+
 #pragma once
 
 #include "PushUSB.h"
-#include "PushUI.h"
-#include "ResolumeTrackerOSC.h"
-#include "Color.h"
-#define CANVAS_ITY_IMPLEMENTATION
-#include "canvas_ity.hpp"
-#include <cstdint>
-#include <memory>
-#include <cmath>
+// Forward declaration to avoid circular dependency
+class PushUI;
 
-#ifndef M_PI
-#define M_PI 3.14159265
-#endif
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
+
+#include "nanovg.h"
+#include "nanovg_gl.h"
+
+#include <cstdint>
+#include <cstring>
+#include <iostream>
 
 // Display constants
 static const int DISPLAY_WIDTH = 960;
 static const int DISPLAY_HEIGHT = 160;
 
-// Forward declaration
-class PushUI;
-
-// PushDisplay class - handles all display rendering
 class PushDisplay {
 private:
     PushUSB& pushDevice;
-    PushUI* parentUI;
-    std::unique_ptr<canvas_ity::canvas> canvas;
+    PushUI* parentUI;  // Read-only reference to PushUI
+    NVGcontext* vg;
+    GLFWwindow* window;
+    GLuint fbo, colorTexture;
     uint8_t displayBuffer[DISPLAY_WIDTH * DISPLAY_HEIGHT * 4]; // RGBA
     
+    // Helper to ensure OpenGL context and GLAD are properly initialized for the current thread
+    bool ensureGLContext() {
+        if (!window) {
+            std::cerr << "ensureGLContext(): No window available" << std::endl;
+            return false;
+        }
+        
+        // Make the context current for this thread
+        glfwMakeContextCurrent(window);
+        
+        // Ensure GLAD is loaded for this thread
+        if (!gladLoadGL(glfwGetProcAddress)) {
+            std::cerr << "ensureGLContext(): Failed to load OpenGL with GLAD for this thread" << std::endl;
+            return false;
+        }
+        
+        return true;
+    }
+
 public:
-    PushDisplay(PushUSB& push) : pushDevice(push), parentUI(nullptr) {
-        canvas = std::make_unique<canvas_ity::canvas>(DISPLAY_WIDTH, DISPLAY_HEIGHT);
-    }
-    
-    void setParentUI(PushUI* parent) { parentUI = parent; }
-    
-    void clear() {
-        // Clear the canvas to black
-        canvas->set_color(canvas_ity::fill_style, 0.0f, 0.0f, 0.0f, 1.0f);
-        canvas->clear_rectangle(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-    }
-    
-    void update() {
-        if (!parentUI) {
-            clear();
+    PushDisplay(PushUSB& push, PushUI* ui = nullptr) : pushDevice(push), parentUI(ui), vg(nullptr), window(nullptr), fbo(0), colorTexture(0) {
+        // Initialize GLFW
+        if (!glfwInit()) {
+            std::cerr << "GLFW init failed" << std::endl;
             return;
         }
         
-        // Clear to black background
-        clear();
+        // Create a minimal hidden window
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         
-        // Check if we're in selecting mode
-        if (parentUI->getMode() == PushUI::Mode::Selecting) {
-            // Draw 2-pixel green border around entire screen
-            canvas->set_color(canvas_ity::stroke_style, 0.0f, 1.0f, 0.0f, 1.0f);
-            canvas->set_line_width(2.0f);
-            
-            // Draw rectangle border (stroke a rectangle that covers the screen)
-            canvas->stroke_rectangle(1.0f, 1.0f, 
-                                   static_cast<float>(DISPLAY_WIDTH - 2), 
-                                   static_cast<float>(DISPLAY_HEIGHT - 2));
+        window = glfwCreateWindow(1, 1, "offscreen", nullptr, nullptr);
+        if (!window) {
+            std::cerr << "Failed to create GLFW window" << std::endl;
+            glfwTerminate();
+            return;
         }
         
-        // Draw the 8 encoder knobs
-        drawEncoders();
+        glfwMakeContextCurrent(window);
+        
+        // Load OpenGL
+        if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
+            std::cerr << "Failed to load OpenGL" << std::endl;
+            glfwDestroyWindow(window);
+            glfwTerminate();
+            return;
+        }
+        
+        std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+        
+        // Create NanoVG context
+        vg = nvgCreateGL3(NVG_ANTIALIAS);
+        if (!vg) {
+            std::cerr << "Failed to create NanoVG context" << std::endl;
+            glfwDestroyWindow(window);
+            glfwTerminate();
+            return;
+        }
+        
+        std::cout << "NanoVG context created successfully" << std::endl;
+        
+        // Create simple framebuffer
+        glGenFramebuffers(1, &fbo);
+        glGenTextures(1, &colorTexture);
+        
+        glBindTexture(GL_TEXTURE_2D, colorTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
+        
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            std::cerr << "Framebuffer not complete!" << std::endl;
+        } else {
+            std::cout << "Framebuffer created successfully" << std::endl;
+        }
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        
+        // Clear display buffer
+        memset(displayBuffer, 0, sizeof(displayBuffer));
+    }
+    
+    ~PushDisplay() {
+        if (window) {
+            // Ensure context is current for cleanup
+            ensureGLContext();
+            if (vg) {
+                nvgDeleteGL3(vg);
+            }
+            if (fbo) {
+                glDeleteFramebuffers(1, &fbo);
+            }
+            if (colorTexture) {
+                glDeleteTextures(1, &colorTexture);
+            }
+            glfwDestroyWindow(window);
+        }
+        glfwTerminate();
+    }
+    
+    // Set the PushUI reference after construction
+    void setParentUI(PushUI* parent) { parentUI = parent; }
+    
+    void update() {
+        if (!vg || !window || !fbo) {
+            std::cerr << "update(): Components not initialized" << std::endl;
+            return;
+        }
+        
+        // Ensure OpenGL context and GLAD are properly set up for this thread
+        if (!ensureGLContext()) {
+            std::cerr << "update(): Failed to ensure GL context" << std::endl;
+            return;
+        }
+        
+        // Bind framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glViewport(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+        
+        // Clear to black
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        
+        // Start NanoVG frame
+        nvgBeginFrame(vg, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1.0f);
+        
+        // Fill entire screen with green for basic test
+        nvgBeginPath(vg);
+        nvgRect(vg, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+        nvgFillColor(vg, nvgRGB(0, 255, 0)); // Bright green
+        nvgFill(vg);
+        
+        // TODO: Add more sophisticated UI rendering based on parentUI state
+        // if (parentUI) {
+        //     // Read state from parentUI and render accordingly
+        // }
+        
+        // End NanoVG frame
+        nvgEndFrame(vg);
+        
+        // Unbind framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        
+        std::cout << "Update completed - green screen rendered" << std::endl;
     }
     
     void sendToDevice() {
-        // Get the rendered image data from canvas
-        canvas->get_image_data(displayBuffer, DISPLAY_WIDTH, DISPLAY_HEIGHT, 
-                             DISPLAY_WIDTH * 4, 0, 0);
-                             
+        if (!vg || !window || !fbo) {
+            std::cerr << "sendToDevice(): Components not initialized" << std::endl;
+            return;
+        }
+        
+        // Ensure OpenGL context and GLAD are properly set up for this thread
+        if (!ensureGLContext()) {
+            std::cerr << "sendToDevice(): Failed to ensure GL context" << std::endl;
+            return;
+        }
+        
+        // Bind framebuffer for reading
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        
+        // Check framebuffer status
+        GLenum status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE) {
+            std::cerr << "Read framebuffer not complete: " << status << std::endl;
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            return;
+        }
+        
+        // Read pixels
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        glReadPixels(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, displayBuffer);
+        
+        GLenum error = glGetError();
+        if (error != GL_NO_ERROR) {
+            std::cerr << "OpenGL error during glReadPixels: " << error << std::endl;
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            return;
+        }
+        
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        
+        // Flip image vertically (OpenGL is bottom-up, device expects top-down)
+        uint8_t tempBuffer[DISPLAY_WIDTH * DISPLAY_HEIGHT * 4];
+        for (int y = 0; y < DISPLAY_HEIGHT; y++) {
+            int srcY = DISPLAY_HEIGHT - 1 - y;
+            memcpy(&tempBuffer[y * DISPLAY_WIDTH * 4], 
+                   &displayBuffer[srcY * DISPLAY_WIDTH * 4], 
+                   DISPLAY_WIDTH * 4);
+        }
+        memcpy(displayBuffer, tempBuffer, sizeof(displayBuffer));
+        
+        // Check if we have green pixels
+        bool hasGreen = false;
+        for (int i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT * 4; i += 4) {
+            if (displayBuffer[i+1] > 200) { // Check green channel
+                hasGreen = true;
+                break;
+            }
+        }
+        std::cout << "Frame has green content: " << (hasGreen ? "YES" : "NO") << std::endl;
+        
+        // Send to Push device
         if (pushDevice.isDeviceConnected()) {
             pushDevice.sendDisplayFrameBlocking(displayBuffer);
+        } else {
+            std::cerr << "Push device not connected" << std::endl;
         }
     }
-    
-    void drawKnob(int x, int y, const std::string& textOnKnob, const std::string& textBelowKnob, 
-              float currentValue, float physicalValue) {
-        const float knobRadius = 25.0f;
-        const float trackRadius = 32.0f;
-        const float trackWidth = 4.0f;
-        const float dotRadius = 3.0f;
-        const float dotDistance = 18.0f;
-        
-        // Clamp values to 0-1 range
-        currentValue = std::max(0.0f, std::min(1.0f, currentValue));
-        physicalValue = std::max(0.0f, std::min(1.0f, physicalValue));
-        
-        // Convert values to angles (270 degrees rotation range: -135° to +135°)
-        const float angleRange = 270.0f * M_PI / 180.0f; // 270 degrees in radians
-        const float startAngle = -135.0f * M_PI / 180.0f; // Start at -135 degrees
-        const float currentAngle = startAngle + (currentValue * angleRange);
-        const float physicalAngle = startAngle + (physicalValue * angleRange);
-        
-        float centerX = static_cast<float>(x);
-        float centerY = static_cast<float>(y);
-        
-        // Draw track background (dark gray arc)
-        canvas->set_color(canvas_ity::stroke_style, 0.2f, 0.2f, 0.2f, 1.0f);
-        canvas->set_line_width(trackWidth);
-        canvas->line_cap = canvas_ity::circle;
-        canvas->begin_path();
-        canvas->arc(centerX, centerY, trackRadius, startAngle, startAngle + angleRange, false);
-        canvas->stroke();
-        
-        // Draw current value track (bright arc up to currentValue)
-        if (currentValue > 0.0f) {
-            canvas->set_color(canvas_ity::stroke_style, 0.3f, 0.7f, 1.0f, 1.0f); // Light blue
-            canvas->set_line_width(trackWidth);
-            canvas->begin_path();
-            canvas->arc(centerX, centerY, trackRadius, startAngle, currentAngle, false);
-            canvas->stroke();
-        }
-        
-        // Draw knob body with gradient effect using circles
-        // Outer shadow/border
-        canvas->set_color(canvas_ity::fill_style, 0.1f, 0.1f, 0.1f, 1.0f);
-        canvas->begin_path();
-        canvas->arc(centerX, centerY, knobRadius + 1.0f, 0, 2.0f * M_PI, false);
-        canvas->fill();
-        
-        // Main knob body
-        canvas->set_color(canvas_ity::fill_style, 0.45f, 0.45f, 0.45f, 1.0f);
-        canvas->begin_path();
-        canvas->arc(centerX, centerY, knobRadius, 0, 2.0f * M_PI, false);
-        canvas->fill();
-        
-        // Inner highlight (top-left light)
-        canvas->set_color(canvas_ity::fill_style, 0.6f, 0.6f, 0.6f, 1.0f);
-        canvas->begin_path();
-        canvas->arc(centerX - 3.0f, centerY - 3.0f, knobRadius * 0.7f, 0, 2.0f * M_PI, false);
-        canvas->fill();
-        
-        // Center area
-        canvas->set_color(canvas_ity::fill_style, 0.5f, 0.5f, 0.5f, 1.0f);
-        canvas->begin_path();
-        canvas->arc(centerX, centerY, knobRadius * 0.8f, 0, 2.0f * M_PI, false);
-        canvas->fill();
-        
-        // Calculate white dot position based on physical value
-        float dotX = centerX + cos(physicalAngle) * dotDistance;
-        float dotY = centerY + sin(physicalAngle) * dotDistance;
-        
-        // Draw white position dot
-        canvas->set_color(canvas_ity::fill_style, 1.0f, 1.0f, 1.0f, 1.0f);
-        canvas->begin_path();
-        canvas->arc(dotX, dotY, dotRadius, 0, 2.0f * M_PI, false);
-        canvas->fill();
-        
-        // Draw text on knob (center)
-        if (!textOnKnob.empty()) {
-            canvas->set_color(canvas_ity::fill_style, 1.0f, 1.0f, 1.0f, 1.0f);
-            canvas->text_align = canvas_ity::center;
-            canvas->text_baseline = canvas_ity::middle;
-            canvas->fill_text(textOnKnob.c_str(), centerX, centerY);
-        }
-        
-        // Draw text below knob
-        if (!textBelowKnob.empty()) {
-            canvas->set_color(canvas_ity::fill_style, 1.0f, 1.0f, 1.0f, 1.0f);
-            canvas->text_align = canvas_ity::center;
-            canvas->text_baseline = canvas_ity::top;
-            canvas->fill_text(textBelowKnob.c_str(), centerX, centerY + knobRadius + 8.0f);
-        }
-    }
-    
-private:
-    void drawEncoders() {
-        if (!parentUI) return;
-        
-        // Calculate knob positions - 8 knobs evenly spaced across the display
-        const float knobSpacing = static_cast<float>(DISPLAY_WIDTH) / 8.0f;
-        const float knobY = static_cast<float>(DISPLAY_HEIGHT) / 2.0f; // Center vertically
-        
-        for (int i = 0; i < 8; i++) {
-            float knobX = knobSpacing * (i + 0.5f); // Center each knob in its section
-            float currentValue = 0.5f; // TODO: Get actual parameter value from Resolume
-            float physicalValue = parentUI->getEncoderPosition(i);
-            
-            // Generate knob labels
-            std::string knobText = std::to_string(i + 1); // Simple numbering for now
-            std::string belowText = "Track " + std::to_string(i + 1);
-            
-            drawKnob(static_cast<int>(knobX), static_cast<int>(knobY), 
-                    knobText, belowText, currentValue, physicalValue);
-        }
-    }
-
 };
+

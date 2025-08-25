@@ -1,0 +1,6 @@
+[submodule "include/glfw"]
+	path = include/glfw
+	url = https://github.com/glfw/glfw
+[submodule "include/nanovg"]
+	path = include/nanovg
+	url = https://github.com/memononen/nanovg.git

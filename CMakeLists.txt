@@ -10,6 +10,17 @@ project("push2_resolume")
 
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}")
 
+# Add GLFW
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(include/glfw)
+
+# GLAD is header-only, just need to include the directory
+# No library compilation needed
+
+# NanoVG is header-only, just need to include the directory
+# No library compilation needed
 
 # Add all source files explicitly to avoid missing new .cpp files
 set(SOURCES
@@ -38,7 +49,6 @@ else()
     )
 endif()
 
-
 # Add RtMidi as a static library
 add_library(rtmidi_static STATIC 
     include/RtMidi.cpp
@@ -57,7 +67,7 @@ IF(WIN32)
     
     # Link libraries
     target_link_libraries(push2_resolume ${CMAKE_CURRENT_SOURCE_DIR}/lib/libusb-1.0.lib)
-    target_link_libraries(push2_resolume rtmidi_static winmm)
+    target_link_libraries(push2_resolume rtmidi_static winmm glfw nanovg opengl32)
     
 ELSE(WIN32)
     set(IpSystemTypePath ip/posix)
@@ -69,7 +79,7 @@ ELSE(WIN32)
     add_library( libusb SHARED IMPORTED )
     set_target_properties( libusb PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/libusb-1.0.so )
     target_link_libraries(push2_resolume libusb)
-    target_link_libraries(push2_resolume rtmidi_static asound pthread)
+    target_link_libraries(push2_resolume rtmidi_static asound pthread glfw nanovg GL)
 ENDIF(WIN32)
 
 
@@ -103,17 +113,36 @@ endif()
 # Include directories
 target_include_directories(push2_resolume PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/glfw/include
+    ${CMAKE_SOURCE_DIR}/include/nanovg/src
     ${CMAKE_SOURCE_DIR}/ip
     ${CMAKE_SOURCE_DIR}/osc
     ${CMAKE_SOURCE_DIR}/src
 )
+
+# Define NANOVG_GL3 for the main executable
+target_compile_definitions(push2_resolume PRIVATE NANOVG_GL3)
 target_include_directories(oscpack PRIVATE
     ${CMAKE_SOURCE_DIR}/ip
     ${CMAKE_SOURCE_DIR}/osc
 )
+
 target_include_directories(rtmidi_static PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
+
+add_library(nanovg STATIC
+    ${CMAKE_SOURCE_DIR}/include/nanovg/src/nanovg.c
+    ${CMAKE_SOURCE_DIR}/src/nanovg_impl.cpp
+)
+
+target_include_directories(nanovg PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/nanovg/src
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+# Define NANOVG_GL3 for the nanovg library
+target_compile_definitions(nanovg PRIVATE NANOVG_GL3)
 
 if(MSVC)
   # Force to always compile with W4
