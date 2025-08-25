@@ -11,6 +11,8 @@
 #include <cstring>
 #include <chrono>
 #include <algorithm>
+#include <queue>
+#include <condition_variable>
 
 #define NOMINMAX
 #include "libusb.h"
@@ -52,6 +54,23 @@ struct PushMidiMessage {
     }
 };
 
+// Display constants
+static const int DISPLAY_WIDTH = 960;
+static const int DISPLAY_HEIGHT = 160;
+
+// Frame data structure for queuing
+struct FrameData {
+    uint8_t data[DISPLAY_WIDTH * DISPLAY_HEIGHT * 2]; // RGB565 data
+    std::chrono::steady_clock::time_point timestamp;
+    
+    FrameData() : timestamp(std::chrono::steady_clock::now()) {}
+    
+    void copyFrom(const uint8_t* rgb565Data) {
+        memcpy(data, rgb565Data, sizeof(data));
+        timestamp = std::chrono::steady_clock::now();
+    }
+};
+
 class PushUSB {
 private:
     // RtMidi objects
@@ -62,6 +81,103 @@ private:
     std::function<void(const PushMidiMessage&)> midiCallback;  // Updated type
 
     libusb_device_handle* deviceHandle = nullptr;
+    
+    // Threading for non-blocking USB transfers
+    std::thread usbThread;
+    std::atomic<bool> shouldStopUsbThread;
+    
+    // Frame queue for non-blocking display updates
+    std::queue<FrameData> frameQueue;
+    std::mutex frameQueueMutex;
+    std::condition_variable frameAvailable;
+    
+    // Frame queue management
+    static const size_t MAX_FRAME_QUEUE_SIZE = 3; // Keep only the latest frames
+    FrameData currentFrame; // Currently processing frame
+    
+    // USB thread function for non-blocking transfers
+    void usbThreadFunction() {
+        std::cout << "USB thread started" << std::endl;
+        
+        while (!shouldStopUsbThread.load()) {
+            std::unique_lock<std::mutex> lock(frameQueueMutex);
+            
+            // Wait for frames to be available or stop signal
+            frameAvailable.wait_for(lock, std::chrono::milliseconds(50), [this] {
+                return !frameQueue.empty() || shouldStopUsbThread.load();
+            });
+            
+            if (shouldStopUsbThread.load()) {
+                break;
+            }
+            
+            // Get the latest frame if available
+            if (!frameQueue.empty()) {
+                currentFrame = frameQueue.front();
+                frameQueue.pop();
+                lock.unlock();
+                
+                // Clear any remaining frames to keep latency low
+                {
+                    std::lock_guard<std::mutex> clearLock(frameQueueMutex);
+                    while (frameQueue.size() > 1) {
+                        frameQueue.pop();
+                    }
+                }
+                
+                // Send frame without blocking the main thread
+                if (deviceHandle) {
+                    sendDisplayFrameBlocking565_Internal(currentFrame.data);
+                }
+            } else {
+                lock.unlock();
+            }
+            
+            // Small delay to prevent excessive CPU usage
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        
+        std::cout << "USB thread stopped" << std::endl;
+    }
+    
+    // Internal version of sendDisplayFrameBlocking565 for use by USB thread
+    bool sendDisplayFrameBlocking565_Internal(const uint8_t* rgb565Data) {
+        if (!deviceHandle || !rgb565Data) {
+            return false;
+        }
+
+        // Send frame header first
+        uint8_t frameHeader[16] = {
+            0xFF, 0xCC, 0xAA, 0x88,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        };
+
+        int transferred = 0;
+        int result = libusb_bulk_transfer(deviceHandle, 0x01, frameHeader, 16, &transferred, 1000);
+        if (result != 0 || transferred != 16) {
+            std::cerr << "Failed to send frame header: " << result << std::endl;
+            return false;
+        }
+
+        // Send RGB565 pixel data line by line with XOR pattern
+        uint8_t lineBuffer[2048]; // 1920 bytes pixel data + 128 filler bytes
+
+        for (int y = 0; y < 160; y++) {
+            // Apply XOR pattern to RGB565 line (no conversion needed)
+            applyXORPatternToRGB565Line(rgb565Data + (y * 960 * 2), lineBuffer);
+
+            // Send line buffer
+            result = libusb_bulk_transfer(deviceHandle, 0x01, lineBuffer, 2048, &transferred, 1000);
+            if (result != 0 || transferred != 2048) {
+                std::cerr << "Failed to send line " << y << ": " << result << std::endl;
+                return false;
+            }
+        }
+
+        return true;
+    }
     
     // Static callback for RtMidi (C-style callback required)
     // This converts RtMidi callbacks to our callback system
@@ -165,7 +281,7 @@ private:
     }
     
 public:
-    PushUSB() : isConnected(false) {
+    PushUSB() : isConnected(false), shouldStopUsbThread(false) {
         try {
             midiIn = std::make_unique<RtMidiIn>();
             midiOut = std::make_unique<RtMidiOut>();
@@ -176,6 +292,14 @@ public:
     
     ~PushUSB() {
         disconnect();
+        
+        // Stop USB thread
+        shouldStopUsbThread.store(true);
+        frameAvailable.notify_all();
+        
+        if (usbThread.joinable()) {
+            usbThread.join();
+        }
     }
     
     bool initialize() {
@@ -233,6 +357,11 @@ public:
             return false;
         }
 
+        // Start USB thread for non-blocking frame transfers
+        shouldStopUsbThread.store(false);
+        usbThread = std::thread(&PushUSB::usbThreadFunction, this);
+        std::cout << "USB thread started for non-blocking transfers" << std::endl;
+
         return true;
     }
     
@@ -254,6 +383,14 @@ public:
             
         } catch (RtMidiError& error) {
             std::cerr << "MIDI disconnect error: " << error.getMessage() << std::endl;
+        }
+
+        // Stop USB thread before closing device
+        if (usbThread.joinable()) {
+            shouldStopUsbThread.store(true);
+            frameAvailable.notify_all();
+            usbThread.join();
+            std::cout << "USB thread stopped" << std::endl;
         }
 
         if (deviceHandle) {
@@ -480,8 +617,37 @@ public:
         return sendSysEx(sysex);
     }
 
-    // Send frame to Push 2 display
-    bool sendDisplayFrameBlocking(const uint8_t* rgbaData) { // array is assumed to be 960x160 RGBA8
+    // Send frame to Push 2 display (RGB565 format - no conversion)
+    // Non-blocking version - queues frame for USB thread to send
+    bool sendDisplayFrameBlocking565(const uint8_t* rgb565Data) {
+        if (!deviceHandle || !rgb565Data || !usbThread.joinable()) {
+            return false;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(frameQueueMutex);
+            
+            // Clear old frames if queue is getting full to keep latency low
+            while (frameQueue.size() >= MAX_FRAME_QUEUE_SIZE) {
+                frameQueue.pop();
+            }
+            
+            // Create new frame and copy data
+            FrameData newFrame;
+            newFrame.copyFrom(rgb565Data);
+            
+            // Add to queue
+            frameQueue.push(std::move(newFrame));
+        }
+        
+        // Notify USB thread that a frame is available
+        frameAvailable.notify_one();
+        
+        return true;
+    }
+
+    // Send frame to Push 2 display (legacy RGBA format)
+    bool sendDisplayFrameBlocking(const uint8_t* rgbaData) {
         if (!deviceHandle || !rgbaData) {
             return false;
         }
@@ -520,7 +686,28 @@ public:
     }
 
 private:
-    // Convert RGBA8 line to RGB565 format with XOR pattern applied
+    // Apply XOR pattern to RGB565 line data
+    static inline void applyXORPatternToRGB565Line(const uint8_t* rgb565Line, uint8_t* lineBuffer) {
+        // XOR pattern: 0xE7, 0xF3, 0xE7, 0xFF
+        const uint32_t xorPattern32 = 0xFFE7F3E7; // Little-endian
+        
+        // Copy 1920 bytes (960 pixels * 2 bytes) and apply XOR pattern
+        const uint32_t* src32 = reinterpret_cast<const uint32_t*>(rgb565Line);
+        uint32_t* dst32 = reinterpret_cast<uint32_t*>(lineBuffer);
+        
+        // Process in 32-bit chunks (1920 bytes = 480 uint32_t)
+        for (int i = 0; i < 480; i++) {
+            dst32[i] = src32[i] ^ xorPattern32;
+        }
+        
+        // Fill remaining 128 bytes (1920-2048) with XOR pattern
+        uint32_t* fillPtr = reinterpret_cast<uint32_t*>(lineBuffer + 1920);
+        for (int i = 0; i < 32; i++) {
+            fillPtr[i] = xorPattern32;
+        }
+    }
+
+    // Convert RGBA8 line to RGB565 format with XOR pattern applied (legacy)
     static inline void convertLineToRGB565(const uint8_t* rgbaLine, uint8_t* lineBuffer, int width) {
         // XOR pattern as specified: 0xE7, 0xF3, 0xE7, 0xFF
         const uint32_t xorPattern32 = 0xFFE7F3E7; // Little-endian: E7, F3, E7, FF

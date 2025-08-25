@@ -142,6 +142,7 @@ public:
             return;
         }
         pushDevice.setPadColorIndex(note, paletteIdx);
+        //std::cout << "Setting Pad Color Index: " << note << ", " << paletteIdx << std::endl;
         currentPadPaletteIndices[idx] = paletteIdx;
     }
 
@@ -165,6 +166,7 @@ public:
         setPaletteEntryWhite(paletteIdx, brightness);
         if (currentButtonPaletteIndices[cc] == paletteIdx) return;
         pushDevice.setButtonColorIndex(cc, paletteIdx);
+        //std::cout << "Setting BW Button Color Index: " << cc << ", " << paletteIdx << std::endl;
         currentButtonPaletteIndices[cc] = paletteIdx;
     }
 
@@ -180,6 +182,7 @@ public:
         setPaletteEntryRGB(paletteIdx, color.r, color.g, color.b);
         if (currentButtonPaletteIndices[cc] == paletteIdx) return;
         pushDevice.setButtonColorIndex(cc, paletteIdx);
+        //std::cout << "Setting RGB Button Color Index: " << cc << ", " << paletteIdx << std::endl;
         currentButtonPaletteIndices[cc] = paletteIdx;
     }
 
