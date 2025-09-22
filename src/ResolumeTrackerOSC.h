@@ -410,6 +410,9 @@ private:
     // Add reference to OSC listener for queries
     ResolumeOSCListener* oscListener = nullptr;
     
+    // Callback for selection changes
+    std::function<void()> selectionChangeCallback = nullptr;
+    
     // Message processing thread
     std::thread processingThread;
     std::atomic<bool> shouldStopProcessing{false};
@@ -457,6 +460,11 @@ public:
     void setOSCListener(ResolumeOSCListener* listener) {
         oscListener = listener;
         // No need to set callback anymore since we're using the queue
+    }
+    
+    // Set callback for selection changes
+    void setSelectionChangeCallback(std::function<void()> callback) {
+        selectionChangeCallback = callback;
     }
     
     // Returns the number of layers
@@ -526,7 +534,11 @@ public:
                 if (pathParts[0] == "columns") {
                     int columnId = std::stoi(pathParts[1]);
                     if (isSelect) {
+                        int prevSelectedColumnId = selectedColumnId;
                         selectedColumnId = columnId;
+                        if (prevSelectedColumnId != selectedColumnId && selectionChangeCallback) {
+                            selectionChangeCallback();
+                        }
                     } else if (isConnect) {
                         connectedColumnId = columnId;
                     }
@@ -538,7 +550,11 @@ public:
                     if (pathParts.size() == 3 && pathParts[2] == "select") {
                         //debugOSC(pathParts, floats, integers, strings);
                         // /layers/X/select
+                        int prevSelectedLayerId = selectedLayerId;
                         selectedLayerId = layerId;
+                        if (prevSelectedLayerId != selectedLayerId && selectionChangeCallback) {
+                            selectionChangeCallback();
+                        }
                         return;
                     } else if (pathParts.size() >= 4 && pathParts[2] == "clips") {
                         // check if pathParts[3] starts with a digit. If it doesn't its probably transitiontarget, so ignore it.
@@ -547,8 +563,13 @@ public:
                         // /layers/X/clips/Y/select or /connect
                         int clipId = std::stoi(pathParts[3]);
                         if (isSelect) {
+                            int prevSelectedClipLayerId = selectedClipLayerId;
+                            int prevSelectedClipId = selectedClipId;
                             selectedClipLayerId = layerId;
                             selectedClipId = clipId;
+                            if ((prevSelectedClipLayerId != selectedClipLayerId || prevSelectedClipId != selectedClipId) && selectionChangeCallback) {
+                                selectionChangeCallback();
+                            }
                         } else if (isConnect) {
                             // TODO maybe disconnectall?
                         }

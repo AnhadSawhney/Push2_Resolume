@@ -3,6 +3,7 @@
 #include "PushUSB.h"
 // Forward declaration to avoid circular dependency
 class PushUI;
+struct Encoder;
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -86,18 +87,18 @@ private:
         const float spacing = DISPLAY_WIDTH / 8.0f;
         const float y = DISPLAY_HEIGHT * 0.5f;
 
+        // Update virtual values from Resolume tracker
+        parentUI->updateEncoderVirtualValues();
+
         for (int i = 0; i < 8; ++i) {
             TIMER_START(one_encoder);
             float x = spacing * (i + 0.5f);
-            float currentValue = 0.5f; // placeholder
-            
-            float physicalValue = parentUI->getEncoderPosition(i);
+            Encoder encoder = parentUI->getEncoder(i);
 
             std::string knobText = std::to_string(i + 1);
-            std::string belowText = "Track " + std::to_string(i + 1);
 
             drawKnob(static_cast<int>(x), static_cast<int>(y),
-                     knobText, belowText, currentValue, physicalValue);
+                     knobText, encoder.displayName, encoder.virtualValue, encoder.physicalValue);
             TIMER_END(one_encoder);
         }
         TIMER_END(encoders_draw);
@@ -319,7 +320,7 @@ public:
         TIMER_START(usb_transfer);
         // Queue frame for non-blocking USB transfer via USB thread
         if (pushDevice.isDeviceConnected()) {
-            pushDevice.sendDisplayFrameBlocking565(reinterpret_cast<uint8_t*>(displayBuffer));
+            pushDevice.sendDisplayFrame565(reinterpret_cast<uint8_t*>(displayBuffer));
         } else {
             std::cerr << "Push device not connected" << std::endl;
         }

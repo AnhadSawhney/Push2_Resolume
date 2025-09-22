@@ -7,10 +7,9 @@ PushUI::PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSende
       lastKnownDeck(-1), trackingInitialized(false),
       numLayers(0), numColumns(0), mode(Mode::Triggering)
 {
-    // Initialize encoder positions to center (0.5)
-    for (int i = 0; i < 8; i++) {
-        encoderPositions[i] = 0.5f;
-    }
+    
+    // Initialize default encoder assignments
+    initializeDefaultEncoderAssignments();
 }
 
 PushUI::~PushUI() {
@@ -41,9 +40,9 @@ void PushUI::toggleMode() {
 
 void PushUI::onMidiMessage(const PushMidiMessage& msg) {
     if (msg.isNoteOn()) {
-        // Handle encoder touch events (notes 71-78)
-        if (msg.getNote() >= 71 && msg.getNote() <= 78 && msg.getVelocity() > 0) {
-            int encoderIndex = msg.getNote() - 71;
+        // Handle encoder touch events (notes 0-10)
+        if (msg.getNote() >= 0 && msg.getNote() <= 10 && msg.getVelocity() > 0) {
+            int encoderIndex = msg.getNote();
             handleEncoderTouch(encoderIndex);
             return;
         }
@@ -55,10 +54,18 @@ void PushUI::onMidiMessage(const PushMidiMessage& msg) {
         int cc = msg.getController();
         int value = msg.getValue();
 
-        // Handle encoder position updates (CC71-CC78)
-        if (cc >= 71 && cc <= 78) {
+        // Handle encoder position updates
+        if (cc >= 71 && cc <= 79) { // first 9 encoders
             int encoderIndex = cc - 71;
-            updateEncoderPosition(encoderIndex, value);
+            updateEncoderPhysicalValue(encoderIndex, value);
+            return;
+        } else if (cc == 14) { // 10th encoder (metronome)
+            int encoderIndex = 9;
+            updateEncoderPhysicalValue(encoderIndex, value);
+            return;
+        } else if (cc == 15) { // 11th encoder (tempo)
+            int encoderIndex = 10;
+            updateEncoderPhysicalValue(encoderIndex, value);
             return;
         }
 
@@ -73,6 +80,19 @@ void PushUI::onMidiMessage(const PushMidiMessage& msg) {
         if (cc == 28 && value > 0) {
             toggleMode();
             return;
+        }
+
+        // tap tempo and metronome (resync)
+        if (cc == 3 && value > 0) {
+            std::string address = "/composition/tempocontroller/tempotap";
+            if (oscSender) {
+                oscSender->sendMessage(address, 1);
+            }
+        } else if (cc == 9 && value > 0) {
+            std::string address = "/composition/tempocontroller/resync";
+            if (oscSender) {
+                oscSender->sendMessage(address, 1);
+            }
         }
 
         auto layer = resolumeTracker.getSelectedLayer();
@@ -259,7 +279,32 @@ void PushUI::handleTouchStripPitchBend(uint16_t pitchBendValue) {
     }
 }
 
-void PushUI::updateEncoderPosition(int encoderIndex, int relativeValue) {
+void PushUI::initializeDefaultEncoderAssignments() {
+    // Encoder 0: Always transport position
+    encoders[0] = {
+        "Transport",
+        "transport/position",
+        0.0f, 0.0f // min, max, physical, virtual
+    };
+    
+    // Encoder 1: Always speed
+    encoders[1] = {
+        "Speed", 
+        "transport/position/behaviour/speed",
+        0.0f, 0.0f
+    };
+    
+    // Encoders 2-7: Default to disabled (none)
+    for (int i = 2; i < 8; i++) {
+        encoders[i] = {
+            "---",
+            "",
+            0.0f, 0.0f
+        };
+    }
+}
+
+void PushUI::updateEncoderPhysicalValue(int encoderIndex, int relativeValue) {
     if (encoderIndex < 0 || encoderIndex >= 8) return;
     
     // Convert relative encoder value to position change
@@ -274,8 +319,34 @@ void PushUI::updateEncoderPosition(int encoderIndex, int relativeValue) {
     }
     
     // Update position and clamp to 0.0-1.0 range
-    encoderPositions[encoderIndex] += deltaPosition;
-    encoderPositions[encoderIndex] = std::max(0.0f, std::min(1.0f, encoderPositions[encoderIndex]));
+    encoders[encoderIndex].physicalValue += deltaPosition;
+    encoders[encoderIndex].physicalValue = std::max(0.0f, std::min(1.0f, encoders[encoderIndex].physicalValue));
+    
+    // Send OSC message using dynamic assignment
+    if (oscSender) {
+        const auto& assignment = encoders[encoderIndex];
+        
+        if (assignment.oscAddress.empty()) {
+            return; // Skip disabled encoders
+        }
+        
+        //auto selectedLayer = resolumeTracker.getSelectedLayer();
+        auto selectedClip = resolumeTracker.getSelectedClip();
+        
+        std::string address;
+        float value = encoders[encoderIndex].physicalValue;
+        
+        // Scale value according to assignment range
+        //value = assignment.minValue + (value * (assignment.maxValue - assignment.minValue));
+        
+        // Determine target and build address
+        address = "/composition/selectedclip/" + assignment.oscAddress;
+        
+        if (!address.empty()) {
+            oscSender->sendMessage(address, value);
+            //std::cout << "Encoder " << encoderIndex << " (" << assignment.displayName << ") -> " << address << " = " << value << std::endl;
+        }
+    }
 }
 
 void PushUI::handleEncoderTouch(int encoderIndex) {
@@ -283,7 +354,7 @@ void PushUI::handleEncoderTouch(int encoderIndex) {
     
     // TODO: Handle encoder touch event
     // This is called when encoder is touched (note on message)
-    std::cout << "Encoder " << encoderIndex << " touched, position: " << encoderPositions[encoderIndex] << std::endl;
+    std::cout << "Encoder " << encoderIndex << " touched" << std::endl;
 }
 
 void PushUI::handleEncoderButtonPress(int encoderIndex) {
@@ -291,7 +362,45 @@ void PushUI::handleEncoderButtonPress(int encoderIndex) {
     
     // TODO: Handle encoder button press event  
     // This is called when button above encoder is pressed (CC102-109)
-    std::cout << "Encoder button " << encoderIndex << " pressed, position: " << encoderPositions[encoderIndex] << std::endl;
+    std::cout << "Encoder button " << encoderIndex << " pressed" << std::endl;
+}
+
+void PushUI::onSelectedItemChange() {
+    // This callback is triggered when a new clip or layer is selected
+    // Update encoder assignments based on the selected item
+    
+    auto selectedLayer = resolumeTracker.getSelectedLayer();
+    auto selectedClip = resolumeTracker.getSelectedClip();
+    
+    if (selectedClip.first > 0 && selectedClip.second > 0) {
+        // A clip is selected - prioritize clip controls
+        std::cout << "Selected item changed: Clip " << selectedClip.second << " in Layer " << selectedClip.first << std::endl;
+    } else if (selectedLayer) {
+        // A layer is selected but no specific clip
+        std::cout << "Selected item changed: Layer " << selectedLayer->id << std::endl;
+    } else {
+        // Nothing specifically selected
+        std::cout << "Selected item changed: No specific selection" << std::endl;
+    }
+    
+    // Force an update of virtual values
+    updateEncoderVirtualValues();
+}
+
+void PushUI::updateEncoderVirtualValues() {    
+    // Get the currently selected items
+    //auto selectedLayer = resolumeTracker.getSelectedLayer();
+    //auto selectedClip = resolumeTracker.getSelectedClip();
+    //auto effectsBus = resolumeTracker.getSelectedEffectsBus();
+    
+    // Update virtual values based on current assignments
+    for (int i = 0; i < 8; i++) {
+        const auto& assignment = encoders[i];
+
+        if (assignment.oscAddress.empty()) {
+            continue;
+        }
+    }
 }
 
 /*

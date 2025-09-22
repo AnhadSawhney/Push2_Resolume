@@ -64,12 +64,18 @@ private:
                 return kv.first;
             }
         }
-        // Not found: find first available/unused index (0-121)
-        for (uint8_t idx = 0; idx <= MAX_CUSTOM_PALETTE_INDEX; ++idx) {
-            if (palette.find(idx) == palette.end()) {
+        // Not found: find first available/unused index (1-121)
+        for (uint8_t idx = 1; idx <= MAX_CUSTOM_PALETTE_INDEX; ++idx) {
+            if (palette.find(idx) == palette.end()) { // there were no palette entries with an unassigned bw value
                 PaletteEntry entry = {0, 0, 0, brightness};
                 palette[idx] = entry;
                 pushDevice.setPaletteEntry(idx, entry.r, entry.g, entry.b, entry.w);
+                //std::cout << "PushLights: Created custom BW palette entry " << (int)idx << std::endl;
+                return idx;
+            } else if (palette[idx].w == 0) { // reuse an entry with no bw value
+                palette[idx].w = brightness;
+                pushDevice.setPaletteEntry(idx, palette[idx].r, palette[idx].g, palette[idx].b, brightness);
+                //std::cout << "PushLights: Reused palette entry " << (int)idx << " for custom BW value" << std::endl;
                 return idx;
             }
         }
@@ -91,6 +97,7 @@ private:
                 PaletteEntry entry = {color.r, color.g, color.b, 0};
                 palette[idx] = entry;
                 pushDevice.setPaletteEntry(idx, entry.r, entry.g, entry.b, entry.w);
+                //std::cout << "PushLights: Created custom RGB palette entry " << (int)idx << std::endl;
                 return idx;
             }
         }
@@ -98,8 +105,8 @@ private:
         return 0;
     }
 
-    // Set the white part of a palette entry, preserving RGB if present
-    void setPaletteEntryWhite(uint8_t idx, uint8_t w) {
+    // Don't use this unless absolutely necessary
+    void OVERRIDE_PALETTE_ENTRY_BW(uint8_t idx, uint8_t w) {
         PaletteEntry entry = {0, 0, 0, w};
         auto it = palette.find(idx);
         if (it != palette.end()) {
@@ -111,8 +118,8 @@ private:
         pushDevice.setPaletteEntry(idx, entry.r, entry.g, entry.b, entry.w);
     }
 
-    // Set the RGB part of a palette entry, preserving W if present
-    void setPaletteEntryRGB(uint8_t idx, uint8_t r, uint8_t g, uint8_t b) {
+    // Don't use this unless absolutely necessary
+    void OVERRIDE_PALETTE_ENTRY_RGB(uint8_t idx, uint8_t r, uint8_t g, uint8_t b) {
         PaletteEntry entry = {r, g, b, 0};
         auto it = palette.find(idx);
         if (it != palette.end()) {
@@ -162,8 +169,7 @@ public:
             return;
         }
         uint8_t paletteIdx = getBWPaletteIndex(brightness);
-        // Set the white part of the palette entry, preserving RGB
-        setPaletteEntryWhite(paletteIdx, brightness);
+        
         if (currentButtonPaletteIndices[cc] == paletteIdx) return;
         pushDevice.setButtonColorIndex(cc, paletteIdx);
         //std::cout << "Setting BW Button Color Index: " << cc << ", " << paletteIdx << std::endl;
@@ -178,8 +184,7 @@ public:
             return;
         }
         uint8_t paletteIdx = getRGBPaletteIndex(color);
-        // Set the RGB part of the palette entry, preserving W
-        setPaletteEntryRGB(paletteIdx, color.r, color.g, color.b);
+        
         if (currentButtonPaletteIndices[cc] == paletteIdx) return;
         pushDevice.setButtonColorIndex(cc, paletteIdx);
         //std::cout << "Setting RGB Button Color Index: " << cc << ", " << paletteIdx << std::endl;
@@ -393,5 +398,9 @@ public:
         // set "setup" and "user" buttons to white
         setButtonColorBW(30, 128);
         setButtonColorBW(59, 128);
+
+        // set tap tempo and metronome buttons to white
+        setButtonColorBW(3, 128);
+        setButtonColorBW(9, 128);
     }
 };

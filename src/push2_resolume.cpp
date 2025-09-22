@@ -97,6 +97,13 @@ int main(int argc, char* argv[]) {
                 pushConnected = false;
             } else {
                 std::cout << "PushUI created successfully - PushDisplay and PushLights will be created in their respective threads" << std::endl;
+                
+                // Set up selection change callback
+                resolumeTracker.setSelectionChangeCallback([&pushUI]() {
+                    if (pushUI) {
+                        pushUI->onSelectedItemChange();
+                    }
+                });
             }
         }
 
@@ -176,7 +183,7 @@ int main(int argc, char* argv[]) {
             std::unique_ptr<PushDisplay> pushDisplay = std::make_unique<PushDisplay>(pushUSB, pushUI.get());
             std::cout << "PushDisplay created in display thread" << std::endl;
             
-            constexpr int targetFps = 60;
+            constexpr int targetFps = 30;
             constexpr int frameTimeMs = 1000 / targetFps;
             auto lastFpsCheck = std::chrono::steady_clock::now();
             int frameCount = 0;

@@ -19,6 +19,15 @@
 //#include "ResolumeTrackerREST.h"
 #include "ResolumeTrackerOSC.h"
 
+struct Encoder {        
+    std::string displayName;     // Text to show on display
+    std::string oscAddress;      // OSC address path (relative to layer/clip)
+    //float minValue;              // Minimum value for this parameter
+    //float maxValue;              // Maximum value for this parameter
+    float physicalValue;  // always between 0 and 1
+    float virtualValue; // always between 0 and 1
+};
+
 // Main PushUI class
 class PushUI {
 public: 
@@ -49,9 +58,7 @@ private:
     bool trackingInitialized;
 
     Mode mode = Mode::Triggering;
-
-    // Encoder position tracking (0.0 = minimum, 1.0 = maximum)
-    float encoderPositions[8];
+    Encoder encoders[11]; // there are 11 encoders, 8 above the display, one for setup/user, one for metronome, and one detent one for tempo.
 
 public:
     PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSender> osc = nullptr);
@@ -61,8 +68,18 @@ public:
     
     // Public getters for PushDisplay and PushLights to read state
     Mode getMode() const { return mode; }
+
+    Encoder getEncoder(int index) const { 
+        if (index >= 0 && index < 8) return encoders[index];
+        return Encoder{};
+    }
+
     float getEncoderPosition(int index) const { 
-        if (index >= 0 && index < 8) return encoderPositions[index];
+        if (index >= 0 && index < 8) return encoders[index].physicalValue;
+        return 0.0f;
+    }
+    float getEncoderVirtualValue(int index) const {
+        if (index >= 0 && index < 8) return encoders[index].virtualValue;
         return 0.0f;
     }
     int getColumnOffset() const { return columnOffset; }
@@ -78,13 +95,24 @@ public:
     void toggleMode();
 
     // Encoder position tracking methods
-    void updateEncoderPosition(int encoderIndex, int relativeValue);
+    void updateEncoderPhysicalValue(int encoderIndex, int relativeValue);
     void handleEncoderTouch(int encoderIndex);
     void handleEncoderButtonPress(int encoderIndex);
+    
+    // Callback functions for managing display and encoder values
+    void onSelectedItemChange();
+    void updateEncoderVirtualValues();
 
 private:
     void handlePadPress(int note, int velocity);
     void handleNavigationButtons(int controller, int value);
     void handleTouchStripPitchBend(uint16_t pitchBendValue);
+
+    // Encoder assignment methods
+    void initializeDefaultEncoderAssignments();
+    void reassignEncodersForEffects();
+    //std::vector<std::string> getActiveEffectsFromProperties(PropertyDictionary& properties);
+    //std::vector<std::string> getSortedEffectsPriority(const std::vector<std::string>& activeEffects);
+    //EncoderAssignment createAssignmentForEffect(const std::string& effectName);
 };
 
