@@ -77,9 +77,6 @@ private:
             }
         }
 
-
-        //std::cout << "PushLights: Creating new palette entry for color (" << (int)color.r << ", " << (int)color.g << ", " << (int)color.b << ")" << std::endl;
-
         // SKIP the first index because its always 0 and should remain that way.
         for (uint8_t idx = 1; idx < PALETTE_SIZE; idx++) {
             //std::cout << "Checking palette index " << (int)idx << ": (" << (int)palette[idx].r << ", " << (int)palette[idx].g << ", " << (int)palette[idx].b << ", " << (int)palette[idx].w << ")" << std::endl;
@@ -340,8 +337,6 @@ public:
         } else {
             clearTouchStrip();
         }
-
-        std::cout << "Number of columns: " << numColumns << std::endl;
 
         for (int gridRow = 0; gridRow < 8; gridRow++) {
             for (int gridCol = 0; gridCol < 8; gridCol++) {

@@ -147,16 +147,16 @@
 	"dependencies" : 
 	[
 		{
-			"backtrace" : 3,
-			"id" : "nanovg::@6890427a1f51a3e7e1df"
+			"backtrace" : 4,
+			"id" : "oscpack::@6890427a1f51a3e7e1df"
 		},
 		{
 			"backtrace" : 3,
 			"id" : "rtmidi_static::@6890427a1f51a3e7e1df"
 		},
 		{
-			"backtrace" : 4,
-			"id" : "oscpack::@6890427a1f51a3e7e1df"
+			"backtrace" : 3,
+			"id" : "nanovg::@6890427a1f51a3e7e1df"
 		},
 		{
 			"backtrace" : 3,
