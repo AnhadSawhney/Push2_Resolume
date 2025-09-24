@@ -474,6 +474,10 @@ public:
 
     // Returns the maximum number of clips in any layer (number of columns)
     int getColumnCount() const {
+        return 8;
+
+        // NEED TO FIX WHY NUMBER OF COLUMNS IS ALWAYS 0
+        
         int maxClips = 0;
         for (const auto& layer : layers) {
             if (!layer) continue;

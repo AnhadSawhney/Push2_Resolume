@@ -43,8 +43,8 @@ private:
     std::shared_ptr<OSCSender> oscSender; // Changed from unique_ptr
     int columnOffset;
     int layerOffset;
-    int numLayers;  // Total number of layers in the current deck
-    int numColumns; // Total number of columns in the current deck
+    //int numLayers;  // Total number of layers in the current deck
+    //int numColumns; // Total number of columns in the current deck
     enum PushControls {
         BTN_OCTAVE_UP = 55,
         BTN_OCTAVE_DOWN = 54,
@@ -84,8 +84,8 @@ public:
     }
     int getColumnOffset() const { return columnOffset; }
     int getLayerOffset() const { return layerOffset; }
-    int getNumLayers() const { return numLayers; }
-    int getNumColumns() const { return numColumns; }
+    int getNumLayers() const { return resolumeTracker.getLayerCount(); }
+    int getNumColumns() const { return resolumeTracker.getColumnCount(); }
     ResolumeTracker& getResolumeTracker() { return resolumeTracker; }
     PushUSB& getPushDevice() { return pushDevice; } // For lights that need direct device access
     OSCSender* getOSCSender() const { return oscSender.get(); }

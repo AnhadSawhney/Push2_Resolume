@@ -147,20 +147,20 @@
 	"dependencies" : 
 	[
 		{
-			"backtrace" : 4,
-			"id" : "oscpack::@6890427a1f51a3e7e1df"
-		},
-		{
 			"backtrace" : 3,
 			"id" : "nanovg::@6890427a1f51a3e7e1df"
 		},
 		{
 			"backtrace" : 3,
-			"id" : "glfw::@7cf4cdf8cc575720cdf7"
+			"id" : "rtmidi_static::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 4,
+			"id" : "oscpack::@6890427a1f51a3e7e1df"
 		},
 		{
 			"backtrace" : 3,
-			"id" : "rtmidi_static::@6890427a1f51a3e7e1df"
+			"id" : "glfw::@7cf4cdf8cc575720cdf7"
 		}
 	],
 	"id" : "push2_resolume::@6890427a1f51a3e7e1df",

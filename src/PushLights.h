@@ -32,10 +32,9 @@ private:
         uint8_t r, g, b, w;
     };
 
-    PaletteEntry palette[PALETTE_SIZE];
-    
-    uint8_t nextCustomPaletteIndex = 10; // Start at 10, avoid 0 and high reserved values
-    static constexpr uint8_t MAX_CUSTOM_PALETTE_INDEX = 121; // 122+ reserved
+    PaletteEntry palette[PALETTE_SIZE] = {0};
+
+    //static constexpr uint8_t MAX_CUSTOM_PALETTE_INDEX = 121; // 122+ reserved
 
     // Helper: is this button RGB?
     static inline bool isRGBButton(int cc) {
@@ -77,14 +76,19 @@ private:
                 return idx;
             }
         }
+
+
+        //std::cout << "PushLights: Creating new palette entry for color (" << (int)color.r << ", " << (int)color.g << ", " << (int)color.b << ")" << std::endl;
+
         // SKIP the first index because its always 0 and should remain that way.
         for (uint8_t idx = 1; idx < PALETTE_SIZE; idx++) {
+            //std::cout << "Checking palette index " << (int)idx << ": (" << (int)palette[idx].r << ", " << (int)palette[idx].g << ", " << (int)palette[idx].b << ", " << (int)palette[idx].w << ")" << std::endl;
             if (palette[idx].r == 0 && palette[idx].g == 0 && palette[idx].b == 0) {
                 pushDevice.setPaletteEntry(idx, color.r, color.g, color.b, palette[idx].w);
                 palette[idx].r = color.r;
                 palette[idx].g = color.g;
                 palette[idx].b = color.b;
-                std::cout << "PushLights: Created custom RGB palette entry " << (int)idx << " for color (" << (int)color.r << ", " << (int)color.g << ", " << (int)color.b << ")" << std::endl;
+                //std::cout << "PushLights: Created custom RGB palette entry " << (int)idx << " for color (" << (int)color.r << ", " << (int)color.g << ", " << (int)color.b << ")" << std::endl;
                 return idx;
             }
         }
@@ -337,6 +341,8 @@ public:
             clearTouchStrip();
         }
 
+        std::cout << "Number of columns: " << numColumns << std::endl;
+
         for (int gridRow = 0; gridRow < 8; gridRow++) {
             for (int gridCol = 0; gridCol < 8; gridCol++) {
                 int resolumeLayer = gridRow + 1 + layerOffset;
@@ -350,7 +356,7 @@ public:
 
                 if (parentUI->getResolumeTracker().isClipPlaying(resolumeColumn, resolumeLayer)) {
                     // Lit up according to column number (rainbow)
-                    float hue = (float)(resolumeColumn - 1) * 360.0f / ((float)numColumns);
+                    float hue = (float)(resolumeColumn - 1.0f) * 360.0f / ((float)numColumns);
                     padColor = Color::fromHSV(hue, 1.0f, 1.0f);
                 } 
                 setPadColor(gridRow, gridCol, padColor);

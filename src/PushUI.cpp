@@ -5,7 +5,7 @@ PushUI::PushUI(PushUSB& push, ResolumeTracker& tracker, std::shared_ptr<OSCSende
     : pushDevice(push), resolumeTracker(tracker), oscSender(osc),
       columnOffset(0), layerOffset(0),
       lastKnownDeck(-1), trackingInitialized(false),
-      numLayers(0), numColumns(0), mode(Mode::Triggering)
+      mode(Mode::Triggering)
 {
     
     // Initialize default encoder assignments
