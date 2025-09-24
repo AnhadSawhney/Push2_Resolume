@@ -70,9 +70,33 @@ private:
     libusb_device_handle* deviceHandle = nullptr;
     
     // Asynchronous USB transfer management
+    // NOTE: the single-transfer path is replaced by sliced transfers below.
+    // currentTransfer/transferInProgress kept for compatibility but unused in new path.
     libusb_transfer* currentTransfer = nullptr;
     std::atomic<bool> transferInProgress;
     std::mutex transferMutex;
+
+    // --- BEGIN: Sliced transfer state (mirrors Ableton example) ---
+    static constexpr int kLineSize = 2048;                 // 960*2 + 128 filler
+    static constexpr int kLineCountPerSendBuffer = 8;      // lines per transfer
+    static constexpr int kSendBufferCount = 3;             // triple buffering
+    static constexpr int kSendBufferSize = kLineCountPerSendBuffer * kLineSize;
+
+    libusb_transfer* frameHeaderTransfer_ = nullptr;
+    libusb_transfer* dataTransfers_[kSendBufferCount] = { nullptr, nullptr, nullptr };
+    unsigned char sendBuffers_[kSendBufferCount * kSendBufferSize] = {}; // backing buffers
+    uint8_t frameHeader_[16] = {
+        0xFF, 0xCC, 0xAA, 0x88,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+
+    std::vector<uint8_t> frameData_;   // 160 * 2048 preformatted data
+    uint8_t currentLine_ = 0;          // next line index to send (0..159)
+    std::atomic<bool> frameInProgress_{false}; // streaming flag
+    // --- END: Sliced transfer state ---
+
     // Static callback for asynchronous USB transfers
     static void LIBUSB_CALL transferCallback(libusb_transfer* transfer) {
         PushUSB* pushUSB = static_cast<PushUSB*>(transfer->user_data);
@@ -84,24 +108,32 @@ private:
     // Handle transfer completion
     void onTransferComplete(libusb_transfer* transfer) {
         std::lock_guard<std::mutex> lock(transferMutex);
-        
+
+        // Sliced path: keep reusing transfers; do not free buffers/transfers here.
         if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
             std::cerr << "USB transfer failed with status: " << transfer->status << std::endl;
+            return;
         }
-        
-        // Clean up the transfer buffer that was allocated in sendDisplayFrameBlocking565
-        if (transfer->buffer) {
-            delete[] transfer->buffer;
+
+        // Header completes at the beginning of the next frame; mirrors example semantics.
+        if (transfer == frameHeaderTransfer_) {
+            // Optional hook; noop
+            return;
         }
-        
-        // Free the transfer and mark as not in progress
-        libusb_free_transfer(transfer);
-        if (currentTransfer == transfer) {
-            currentTransfer = nullptr;
+
+        // Data slice completed; queue next slice if streaming
+        if (!frameInProgress_.load()) {
+            return;
         }
-        transferInProgress.store(false);
+
+        // Submit next slice on this same transfer
+        if (!sendNextSlice(transfer)) {
+            // If we fail to submit, stop streaming
+            frameInProgress_.store(false);
+            transferInProgress.store(false);
+        }
     }
-    
+
     // Static callback for RtMidi (C-style callback required)
     // This converts RtMidi callbacks to our callback system
     static void midiInputCallback(double timeStamp, std::vector<unsigned char>* message, void* userData) {
@@ -202,7 +234,52 @@ private:
         libusb_release_interface(device_handle, 0);
         libusb_close(device_handle);
     }
-    
+
+    // Allocate and prepare a libusb bulk transfer for a given buffer
+    libusb_transfer* allocateAndPrepareTransfer(unsigned char* buffer, int bufferSize) {
+        libusb_transfer* transfer = libusb_alloc_transfer(0);
+        if (!transfer) {
+            return nullptr;
+        }
+        // Endpoint 0x01 (bulk out), 1s timeout
+        libusb_fill_bulk_transfer(transfer, deviceHandle, 0x01,
+                                  buffer, bufferSize,
+                                  transferCallback, this, 1000);
+        return transfer;
+    }
+
+    // Copy and submit the next slice; returns false on failure
+    bool sendNextSlice(libusb_transfer* transfer) {
+        // Start of a new frame: submit header first
+        if (currentLine_ == 0) {
+            if (libusb_submit_transfer(frameHeaderTransfer_) != 0) {
+                std::cerr << "Failed to submit frame header transfer" << std::endl;
+                return false;
+            }
+        }
+
+        // Copy 8 lines (or exactly kSendBufferSize bytes) from preformatted frameData_
+        unsigned char* dst = transfer->buffer;
+        const uint8_t* src = frameData_.data() + (currentLine_ * kLineSize);
+        unsigned char* end = dst + kSendBufferSize;
+        while (dst < end) {
+            *dst++ = *src++;
+        }
+
+        // Submit data transfer
+        if (libusb_submit_transfer(transfer) != 0) {
+            std::cerr << "Failed to submit data slice transfer" << std::endl;
+            return false;
+        }
+
+        // Advance
+        currentLine_ += kLineCountPerSendBuffer;
+        if (currentLine_ >= 160) {
+            currentLine_ = 0; // wrap and keep streaming like the example
+        }
+        return true;
+    }
+
 public:
     PushUSB() : isConnected(false), transferInProgress(false) {
         try {
@@ -297,12 +374,29 @@ public:
             std::cerr << "MIDI disconnect error: " << error.getMessage() << std::endl;
         }
 
-        // Cancel any pending USB transfers
+        // Cancel any pending USB transfers (sliced path)
         {
             std::lock_guard<std::mutex> lock(transferMutex);
+            frameInProgress_.store(false);
+            transferInProgress.store(false);
+
+            if (frameHeaderTransfer_) {
+                libusb_cancel_transfer(frameHeaderTransfer_);
+                libusb_free_transfer(frameHeaderTransfer_);
+                frameHeaderTransfer_ = nullptr;
+            }
+            for (int i = 0; i < kSendBufferCount; ++i) {
+                if (dataTransfers_[i]) {
+                    libusb_cancel_transfer(dataTransfers_[i]);
+                    libusb_free_transfer(dataTransfers_[i]);
+                    dataTransfers_[i] = nullptr;
+                }
+            }
+
+            // Legacy single-transfer path cleanup (if any was in-flight)
             if (currentTransfer) {
                 libusb_cancel_transfer(currentTransfer);
-                // Transfer will be freed in the callback
+                // Freed in its callback in the legacy path; just clear pointer
                 currentTransfer = nullptr;
             }
         }
@@ -531,83 +625,58 @@ public:
         return sendSysEx(sysex);
     }
 
-    // Send frame to Push 2 display (RGB565 format) using async libusb
-    // Non-blocking version - uses libusb async transfers
+    // Send frame to Push 2 display (RGB565 format) using sliced async transfers
+    // Mimics Ableton example: header + 3 rotating 16KB buffers of 8 lines each
     bool sendDisplayFrame565(const uint8_t* rgb565Data) {
         if (!deviceHandle || !rgb565Data) {
             return false;
         }
 
-        // Check if a transfer is already in progress
-        if (transferInProgress.load()) {
-            // Previous frame still being sent, skip this frame to avoid blocking
-            return false;
-        }
-
         std::lock_guard<std::mutex> lock(transferMutex);
-        
-        // Double-check after acquiring lock
-        if (transferInProgress.load()) {
-            return false;
+
+        // Prepare the 160*2048 preformatted frame buffer
+        frameData_.resize(160 * kLineSize);
+        uint8_t* dst = frameData_.data();
+        for (int y = 0; y < 160; ++y) {
+            // Convert a line into dst + y*2048
+            applyXORPatternToRGB565Line(rgb565Data + (y * 960 * 2), dst + (y * kLineSize));
         }
 
-        // Allocate transfer structure
-        libusb_transfer* transfer = libusb_alloc_transfer(0);
-        if (!transfer) {
-            std::cerr << "Failed to allocate USB transfer" << std::endl;
-            return false;
+        // Allocate header transfer if needed
+        if (!frameHeaderTransfer_) {
+            frameHeaderTransfer_ = allocateAndPrepareTransfer(frameHeader_, sizeof(frameHeader_));
+            if (!frameHeaderTransfer_) {
+                std::cerr << "Failed to allocate frame header transfer" << std::endl;
+                return false;
+            }
         }
 
-        // Calculate total transfer size: 16 byte header + (160 lines * 2048 bytes per line)
-        const size_t totalSize = 16 + (160 * 2048);
-        
-        // Allocate buffer for the entire frame (this will be freed in callback)
-        uint8_t* transferBuffer = new uint8_t[totalSize];
-        
-        // Prepare frame header
-        uint8_t frameHeader[16] = {
-            0xFF, 0xCC, 0xAA, 0x88,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
-        };
-        
-        // Copy header to transfer buffer
-        memcpy(transferBuffer, frameHeader, 16);
-        
-        // Process RGB565 data line by line and add to transfer buffer
-        uint8_t* bufferPtr = transferBuffer + 16;
-        for (int y = 0; y < 160; y++) {
-            // Apply XOR pattern to RGB565 line directly into transfer buffer
-            applyXORPatternToRGB565Line(rgb565Data + (y * 960 * 2), bufferPtr);
-            bufferPtr += 2048;
+        // Allocate data transfers if needed
+        for (int i = 0; i < kSendBufferCount; ++i) {
+            if (!dataTransfers_[i]) {
+                unsigned char* buffer = sendBuffers_ + i * kSendBufferSize;
+                dataTransfers_[i] = allocateAndPrepareTransfer(buffer, kSendBufferSize);
+                if (!dataTransfers_[i]) {
+                    std::cerr << "Failed to allocate data transfer " << i << std::endl;
+                    return false;
+                }
+            }
         }
 
-        // Setup async transfer
-        libusb_fill_bulk_transfer(
-            transfer,                    // transfer
-            deviceHandle,               // device handle
-            0x01,                       // endpoint
-            transferBuffer,             // buffer
-            static_cast<int>(totalSize), // length
-            transferCallback,           // callback
-            this,                       // user data
-            5000                        // timeout (5 seconds)
-        );
-
-        // Submit the transfer
-        int result = libusb_submit_transfer(transfer);
-        if (result != 0) {
-            std::cerr << "Failed to submit USB transfer: " << libusb_error_name(result) << std::endl;
-            libusb_free_transfer(transfer);
-            delete[] transferBuffer;
-            return false;
-        }
-
-        // Mark transfer as in progress
-        currentTransfer = transfer;
+        // Start streaming this frame (will loop, like the example)
+        currentLine_ = 0;
+        frameInProgress_.store(true);
         transferInProgress.store(true);
-        
+
+        // Kick off the first wave of slices on all buffers
+        for (int i = 0; i < kSendBufferCount; ++i) {
+            if (!sendNextSlice(dataTransfers_[i])) {
+                frameInProgress_.store(false);
+                transferInProgress.store(false);
+                return false;
+            }
+        }
+
         return true;
     }
 

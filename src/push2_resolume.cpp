@@ -231,6 +231,7 @@ int main(int argc, char* argv[]) {
                 // Handle libusb events with a timeout
                 struct timeval timeout = {0, 100000}; // 100ms timeout
                 int result = libusb_handle_events_timeout(nullptr, &timeout);
+                //std::cout << "LibUSB handle events result: " << result << std::endl;
                 if (result < 0 && result != LIBUSB_ERROR_INTERRUPTED) {
                     std::cerr << "LibUSB event handling error: " << libusb_error_name(result) << std::endl;
                 }

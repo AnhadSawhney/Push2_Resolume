@@ -237,8 +237,7 @@ public:
         // Background
         nvgBeginPath(vg);
         nvgRect(vg, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-        //nvgFillColor(vg, nvgRGB(0, 0, 0));
-        nvgFillColor(vg, nvgRGB(127, 0, 0));
+        nvgFillColor(vg, nvgRGB(0, 0, 0));
         nvgFill(vg);
 
         if (parentUI && parentUI->getMode() == PushUI::Mode::Selecting) {
