@@ -92,9 +92,18 @@ private:
         0x00, 0x00, 0x00, 0x00
     };
 
-    std::vector<uint8_t> frameData_;   // 160 * 2048 preformatted data
+    // Double-buffered preformatted frame data: 160 * 2048 bytes per frame
+    std::vector<uint8_t> frameBuffers_[2];
+    int activeFrameIndex_ = 0;   // buffer currently streamed to device
+    int stagingFrameIndex_ = 1;  // buffer we write new frames into
+    std::atomic<bool> newFramePending_{false};
+
     uint8_t currentLine_ = 0;          // next line index to send (0..159)
     std::atomic<bool> frameInProgress_{false}; // streaming flag
+
+    // libusb event handling thread
+    std::thread usbEventThread_;
+    std::atomic<bool> usbEventThreadRunning_{false};
     // --- END: Sliced transfer state ---
 
     // Static callback for asynchronous USB transfers
@@ -248,7 +257,7 @@ private:
         return transfer;
     }
 
-    // Copy and submit the next slice; returns false on failure
+    // Copy and submit the next slice from the active frame; returns false on failure
     bool sendNextSlice(libusb_transfer* transfer) {
         // Start of a new frame: submit header first
         if (currentLine_ == 0) {
@@ -258,24 +267,36 @@ private:
             }
         }
 
-        // Copy 8 lines (or exactly kSendBufferSize bytes) from preformatted frameData_
+        // Copy 8 lines (or exactly kSendBufferSize bytes) from the active preformatted frame
         unsigned char* dst = transfer->buffer;
-        const uint8_t* src = frameData_.data() + (currentLine_ * kLineSize);
+        const std::vector<uint8_t>& activeFrame = frameBuffers_[activeFrameIndex_];
+        if (activeFrame.empty()) {
+            std::cerr << "Active frame buffer is empty" << std::endl;
+            return false;
+        }
+        const uint8_t* src = activeFrame.data() + (currentLine_ * kLineSize);
         unsigned char* end = dst + kSendBufferSize;
         while (dst < end) {
             *dst++ = *src++;
         }
 
         // Submit data transfer
-        if (libusb_submit_transfer(transfer) != 0) {
-            std::cerr << "Failed to submit data slice transfer" << std::endl;
+        int submitRc = libusb_submit_transfer(transfer);
+        if (submitRc != 0) {
+            std::cerr << "Failed to submit data slice transfer: rc=" << submitRc
+                      << " (" << libusb_error_name(submitRc) << ")" << std::endl;
             return false;
         }
 
-        // Advance
+        // Advance line pointer
         currentLine_ += kLineCountPerSendBuffer;
         if (currentLine_ >= 160) {
-            currentLine_ = 0; // wrap and keep streaming like the example
+            // End of frame reached. Wrap and, if a new frame is pending, swap buffers.
+            currentLine_ = 0;
+            if (newFramePending_.load()) {
+                std::swap(activeFrameIndex_, stagingFrameIndex_);
+                newFramePending_.store(false);
+            }
         }
         return true;
     }
@@ -351,6 +372,25 @@ public:
 
         std::cout << "Push 2 USB display opened successfully" << std::endl;
 
+        // Prepare double buffers
+        frameBuffers_[0].resize(160 * kLineSize);
+        frameBuffers_[1].resize(160 * kLineSize);
+
+        // Start libusb event loop thread
+        usbEventThreadRunning_.store(true);
+        usbEventThread_ = std::thread([this]() {
+            while (usbEventThreadRunning_.load()) {
+                timeval tv{0, 5000}; // 5ms
+                // Handle events for default context
+                int rc = libusb_handle_events_timeout_completed(NULL, &tv, NULL);
+                if (rc < 0) {
+                    // Don't spam logs; you may add throttling if needed
+                    // std::cerr << "libusb_handle_events rc=" << rc << std::endl;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                }
+            }
+        });
+
         return true;
     }
     
@@ -372,6 +412,12 @@ public:
             
         } catch (RtMidiError& error) {
             std::cerr << "MIDI disconnect error: " << error.getMessage() << std::endl;
+        }
+
+        // Stop event thread first so callbacks stop firing
+        usbEventThreadRunning_.store(false);
+        if (usbEventThread_.joinable()) {
+            usbEventThread_.join();
         }
 
         // Cancel any pending USB transfers (sliced path)
@@ -634,13 +680,17 @@ public:
 
         std::lock_guard<std::mutex> lock(transferMutex);
 
-        // Prepare the 160*2048 preformatted frame buffer
-        frameData_.resize(160 * kLineSize);
-        uint8_t* dst = frameData_.data();
+        // Ensure buffers are allocated (in case connect() wasn't called yet for some reason)
+        if (frameBuffers_[0].size() != 160 * kLineSize) frameBuffers_[0].resize(160 * kLineSize);
+        if (frameBuffers_[1].size() != 160 * kLineSize) frameBuffers_[1].resize(160 * kLineSize);
+
+        // Prepare the 160*2048 preformatted frame in the staging buffer
+        uint8_t* dst = frameBuffers_[stagingFrameIndex_].data();
         for (int y = 0; y < 160; ++y) {
             // Convert a line into dst + y*2048
             applyXORPatternToRGB565Line(rgb565Data + (y * 960 * 2), dst + (y * kLineSize));
         }
+        newFramePending_.store(true);
 
         // Allocate header transfer if needed
         if (!frameHeaderTransfer_) {
@@ -663,7 +713,14 @@ public:
             }
         }
 
-        // Start streaming this frame (will loop, like the example)
+        // If transfers are already streaming, don't re-kick; just stage the new frame
+        if (transferInProgress.load()) {
+            return true;
+        }
+
+        // Start streaming with the freshly prepared frame
+        std::swap(activeFrameIndex_, stagingFrameIndex_);
+        newFramePending_.store(false);
         currentLine_ = 0;
         frameInProgress_.store(true);
         transferInProgress.store(true);

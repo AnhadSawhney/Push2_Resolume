@@ -59,7 +59,7 @@ private:
             if (palette[idx].w == 0) { // reuse an entry with no bw value
                 pushDevice.setPaletteEntry(idx, palette[idx].r, palette[idx].g, palette[idx].b, brightness);
                 palette[idx].w = brightness;
-                std::cout << "PushLights: Reused palette entry " << (int)idx << " for custom BW value " << (int)brightness << std::endl;
+                //std::cout << "PushLights: Reused palette entry " << (int)idx << " for custom BW value " << (int)brightness << std::endl;
                 return idx;
             }
         }

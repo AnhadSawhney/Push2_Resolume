@@ -17,10 +17,28 @@
 #include "ResolumeTrackerOSC.h"
 #include "OSCListener.h"
 
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <mmsystem.h>
+// winmm is already linked in CMake; no pragma needed
+
+struct TimerResolutionGuard {
+    TimerResolutionGuard() { timeBeginPeriod(1); }
+    ~TimerResolutionGuard() { timeEndPeriod(1); }
+};
+#endif
+
 // ------------------------
 // main()
 // ------------------------
 int main(int argc, char* argv[]) {
+    #if defined(_WIN32)
+    // Improve sleep resolution on Windows to reduce oversleep
+    TimerResolutionGuard timerResGuard;
+    #endif
     // Defaults
     int incomingOscPort = 7000;
     std::string resolumeIp = "127.0.0.1";
@@ -134,25 +152,21 @@ int main(int argc, char* argv[]) {
             std::cout << "PushLights created in lights thread" << std::endl;
             
             constexpr int targetFps = 15;
-            constexpr int frameTimeMs = 1000 / targetFps;
-            auto lastFpsCheck = std::chrono::steady_clock::now();
+            using clock = std::chrono::steady_clock;
+            const auto framePeriod = std::chrono::nanoseconds(1'000'000'000 / targetFps);
+            auto lastFpsCheck = clock::now();
+            auto nextTick = clock::now();
             int frameCount = 0;
             
             while (!shouldStop.load()) {
-                auto frameStart = std::chrono::steady_clock::now();
+                auto frameStart = clock::now();
                 
                 pushLights->updateLights();
                 
                 frameCount++;
                 
-                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - frameStart
-                ).count();
-                
                 // Calculate actual FPS every second
-                auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    frameStart - lastFpsCheck
-                ).count();
+                auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::milliseconds>(frameStart - lastFpsCheck).count();
                 
                 if (timeSinceLastCheck >= 1000) {
                     float actualFps = frameCount * 1000.0f / timeSinceLastCheck;
@@ -163,9 +177,14 @@ int main(int argc, char* argv[]) {
                     lastFpsCheck = frameStart;
                 }
                 
-                int sleepMs = frameTimeMs - static_cast<int>(elapsed);
-                if (sleepMs > 0) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+                // Frame pacing using sleep_until with steady clock
+                nextTick += framePeriod;
+                auto now = clock::now();
+                if (nextTick > now) {
+                    std::this_thread::sleep_until(nextTick);
+                } else {
+                    // Catch up if we're behind to avoid drift
+                    while (nextTick <= now) nextTick += framePeriod;
                 }
             }
             
@@ -184,26 +203,22 @@ int main(int argc, char* argv[]) {
             std::cout << "PushDisplay created in display thread" << std::endl;
             
             constexpr int targetFps = 60;
-            constexpr int frameTimeMs = 1000 / targetFps;
-            auto lastFpsCheck = std::chrono::steady_clock::now();
+            using clock = std::chrono::steady_clock;
+            const auto framePeriod = std::chrono::nanoseconds(1'000'000'000 / targetFps);
+            auto lastFpsCheck = clock::now();
+            auto nextTick = clock::now();
             int frameCount = 0;
             
             while (!shouldStop.load()) {
-                auto frameStart = std::chrono::steady_clock::now();
+                auto frameStart = clock::now();
                 
                 pushDisplay->update();
                 pushDisplay->sendToDevice();
                 
                 frameCount++;
                 
-                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::steady_clock::now() - frameStart
-                ).count();
-                
                 // Calculate actual FPS every second
-                auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    frameStart - lastFpsCheck
-                ).count();
+                auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::milliseconds>(frameStart - lastFpsCheck).count();
                 
                 if (timeSinceLastCheck >= 1000) {
                     float actualFps = frameCount * 1000.0f / timeSinceLastCheck;
@@ -214,30 +229,18 @@ int main(int argc, char* argv[]) {
                     lastFpsCheck = frameStart;
                 }
                 
-                int sleepMs = frameTimeMs - static_cast<int>(elapsed);
-                if (sleepMs > 0) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+                // Frame pacing using sleep_until with steady clock
+                nextTick += framePeriod;
+                auto now = clock::now();
+                if (nextTick > now) {
+                    std::this_thread::sleep_until(nextTick);
+                } else {
+                    // Catch up if we're behind to avoid drift
+                    while (nextTick <= now) nextTick += framePeriod;
                 }
             }
             
             std::cout << "PushDisplay thread exiting" << std::endl;
-        });
-        
-        // LibUSB event handling thread for async transfers
-        std::thread libusbThread([&shouldStop]() {
-            std::cout << "LibUSB event thread started" << std::endl;
-            
-            while (!shouldStop.load()) {
-                // Handle libusb events with a timeout
-                struct timeval timeout = {0, 100000}; // 100ms timeout
-                int result = libusb_handle_events_timeout(nullptr, &timeout);
-                //std::cout << "LibUSB handle events result: " << result << std::endl;
-                if (result < 0 && result != LIBUSB_ERROR_INTERRUPTED) {
-                    std::cerr << "LibUSB event handling error: " << libusb_error_name(result) << std::endl;
-                }
-            }
-            
-            std::cout << "LibUSB event thread exiting" << std::endl;
         });
         
         // If in livetree mode, run the live tree display loop and exit
@@ -320,9 +323,7 @@ int main(int argc, char* argv[]) {
         if (displayThread.joinable()) {
             displayThread.join();
         }
-        if (libusbThread.joinable()) {
-            libusbThread.join();
-        }
+        // libusb event thread is managed inside PushUSB now
         
         std::cout << "Push2-Resolume Controller stopped." << std::endl;
         
