@@ -390,6 +390,8 @@ private:
     int selectedDeckId = 0;
     int connectedColumnId = 0;
 
+    float crossfaderPosition = 0.0f; // 0.0 = left, 1.0 = right
+
     // Track current deck to detect changes
     int currentDeckId;
     bool deckInitialized;
@@ -472,25 +474,32 @@ public:
         return static_cast<int>(layers.size());
     }
 
-    // Returns the maximum number of clips in any layer (number of columns)
+    float getCrossfaderPosition() const {
+        return crossfaderPosition;
+    }
+
+    // Returns the index of the last column that has a clip in any layer (handles gaps)
     int getColumnCount() const {
-        int maxClips = 0;
+        int lastColumn = 0;
         for (const auto& layer : layers) {
             if (!layer) continue;
-            int count = 0;
-            for (const auto& clip : layer->clips) {
-                if (clip && !clip->name.empty()) ++count;
+            const auto& clips = layer->clips;
+            for (size_t i = 0; i < clips.size(); ++i) {
+                const auto& clip = clips[i];
+                if (clip && (clip->exists())) {
+                    int colIndex = static_cast<int>(i + 1);
+                    if (colIndex > lastColumn) lastColumn = colIndex;
+                }
             }
-            if (count > maxClips) maxClips = count;
         }
-        return maxClips;
+        return lastColumn;
     }
 
     void processOSCMessage(const std::string& address, const std::vector<float>& floats,
                            const std::vector<int>& integers, const std::vector<std::string>& strings) {
         try {
             // Only process /composition messages
-            if (address.find("/composition") != 0) return;
+            //if (address.find("/composition") != 0) return;
 
             //if(!floats.empty()) return; // Ignore float messages for now
 
@@ -520,6 +529,18 @@ public:
                     }
                 }
                 return;
+            }
+
+            // Handle crossfader messages
+            if (pathParts[0] == "crossfader") {
+                //debugOSC(pathParts, floats, integers, strings);
+                if (pathParts[1] == "phase") {
+                    // Handle crossfader phase messages
+                    if (!floats.empty()) {
+                        crossfaderPosition = floats[0];
+                    }
+                    return;
+                }
             }
 
             // Check for select/connect messages

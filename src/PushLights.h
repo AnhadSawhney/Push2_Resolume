@@ -319,7 +319,7 @@ public:
             setButtonColorRGB(cc, color);
         }
 
-        if (selectedLayer > 0) {
+        /*if (selectedLayer > 0) {
             auto layer = parentUI->getResolumeTracker().getLayer(selectedLayer);
             if (!layer) {
                 clearTouchStrip();
@@ -336,7 +336,13 @@ public:
             setTouchStripMeter(opacity);
         } else {
             clearTouchStrip();
-        }
+        }*/
+
+        //std::cout << "Crossfader position: " << parentUI->getCrossfaderPosition() << std::endl;
+        
+        setTouchStripMeter(parentUI->getCrossfaderPosition());
+
+        //std::cout << "Number of columns: " << numColumns << ", layers: " << numLayers << std::endl;
 
         for (int gridRow = 0; gridRow < 8; gridRow++) {
             for (int gridCol = 0; gridCol < 8; gridCol++) {

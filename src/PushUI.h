@@ -86,6 +86,7 @@ public:
     int getLayerOffset() const { return layerOffset; }
     int getNumLayers() const { return resolumeTracker.getLayerCount(); }
     int getNumColumns() const { return resolumeTracker.getColumnCount(); }
+    float getCrossfaderPosition() const { return resolumeTracker.getCrossfaderPosition(); }
     ResolumeTracker& getResolumeTracker() { return resolumeTracker; }
     PushUSB& getPushDevice() { return pushDevice; } // For lights that need direct device access
     OSCSender* getOSCSender() const { return oscSender.get(); }

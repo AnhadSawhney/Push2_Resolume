@@ -245,37 +245,35 @@ void PushUI::handleNavigationButtons(int controller, int value) {
 
 void PushUI::handleTouchStripPitchBend(uint16_t pitchBendValue) {
     // Check if there's a selected layer
-    int selectedLayer = resolumeTracker.getSelectedLayerId();
-    if (selectedLayer <= 0) {
-        return; // No layer selected
-    }
+    //int selectedLayer = resolumeTracker.getSelectedLayerId();
+    //if (selectedLayer <= 0) {
+    //    return; // No layer selected
+    //}
     
     // Convert 14-bit pitch bend value (0-16383) to normalized position (0.0-1.0)
     float normalizedPosition = static_cast<float>(pitchBendValue) / 16383.0f;
     
-    float opacity;
+    float output_value;
     
     // Create sensitive middle region with clipped top and bottom fourths
     if (normalizedPosition <= 0.25f) {
         // Bottom fourth - clamp to 0
-        opacity = 0.0f;
+        output_value = 0.0f;
     } else if (normalizedPosition >= 0.75f) {
         // Top fourth - clamp to 1
-        opacity = 1.0f;
+        output_value = 1.0f;
     } else {
         // Middle half (0.25 to 0.75) - map to full range (0.0 to 1.0)
-        opacity = (normalizedPosition - 0.25f) / 0.5f;
+        output_value = (normalizedPosition - 0.25f) / 0.5f;
     }
     
     // Clamp to valid range (should already be in range, but safety check)
-    opacity = std::max(0.0f, std::min(1.0f, opacity));
-    
+    output_value = std::max(0.0f, std::min(1.0f, output_value));
+
     // Send OSC message to set layer opacity
-    std::string address = "/composition/selectedlayer/video/opacity";
+    std::string address = "/composition/crossfader/phase";
     if (oscSender) {
-        oscSender->sendMessage(address, opacity);
-    } else {
-        std::cout << "Would set layer " << selectedLayer << " opacity to: " << opacity << std::endl;
+        oscSender->sendMessage(address, output_value);
     }
 }
 
@@ -305,7 +303,7 @@ void PushUI::initializeDefaultEncoderAssignments() {
 }
 
 void PushUI::updateEncoderPhysicalValue(int encoderIndex, int relativeValue) {
-    if (encoderIndex < 0 || encoderIndex >= 8) return;
+    if (encoderIndex < 0 || encoderIndex >= 9) return;
     
     // Convert relative encoder value to position change
     float deltaPosition = 0.0f;
@@ -329,18 +327,22 @@ void PushUI::updateEncoderPhysicalValue(int encoderIndex, int relativeValue) {
         if (assignment.oscAddress.empty()) {
             return; // Skip disabled encoders
         }
-        
+
         //auto selectedLayer = resolumeTracker.getSelectedLayer();
-        auto selectedClip = resolumeTracker.getSelectedClip();
+        //auto selectedClip = resolumeTracker.getSelectedClip();
         
         std::string address;
         float value = encoders[encoderIndex].physicalValue;
-        
-        // Scale value according to assignment range
-        //value = assignment.minValue + (value * (assignment.maxValue - assignment.minValue));
-        
-        // Determine target and build address
-        address = "/composition/selectedclip/" + assignment.oscAddress;
+
+        if (encoderIndex == 8) {
+            return; // Not implemented yet
+        } else {
+            // Scale value according to assignment range
+            //value = assignment.minValue + (value * (assignment.maxValue - assignment.minValue));
+            
+            // Determine target and build address
+            address = "/composition/selectedclip/" + assignment.oscAddress;
+        }
         
         if (!address.empty()) {
             oscSender->sendMessage(address, value);
