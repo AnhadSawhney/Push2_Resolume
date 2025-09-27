@@ -337,7 +337,7 @@ public:
         // Set font and size before drawing text
         if (fontRegular != -1) {
             nvgFontFace(vg, "regular");
-            nvgFontSize(vg, 12.0f); // Adjust size as needed
+            nvgFontSize(vg, 20.0f); // Adjust size as needed
         }
 
         const float knobRadius = 25.0f;

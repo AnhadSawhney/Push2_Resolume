@@ -119,7 +119,7 @@ void PushUI::onMidiMessage(const PushMidiMessage& msg) {
                     oscSender->sendMessage(address, 0);
                 }
             } else {
-                std::string address = "/composition/selectedlayer/userbutton";
+                std::string address = "/composition/selectedlayer/crossfadergroup";
                 if (oscSender) {
                     oscSender->sendMessage(address, 2);
                 }
@@ -281,19 +281,41 @@ void PushUI::initializeDefaultEncoderAssignments() {
     // Encoder 0: Always transport position
     encoders[0] = {
         "Transport",
-        "transport/position",
-        0.0f, 0.0f // min, max, physical, virtual
+        "/composition/selectedclip/transport/position",
+        0.0f, 0.0f // physical, virtual
     };
     
     // Encoder 1: Always speed
     encoders[1] = {
         "Speed", 
-        "transport/position/behaviour/speed",
+        "/composition/selectedclip/transport/position/behaviour/speed",
         0.0f, 0.0f
     };
     
+    // mask opacity
+    encoders[7] = {
+        "Mask Opacity",
+        "/composition/layers/8/master",
+        1.0f, 1.0f
+    };
+
+    // FX opacity
+    encoders[6] = {
+        "FX Opacity",
+        "/composition/layers/7/master",
+        1.0f, 1.0f
+    };
+
+    // Center Screen opacity
+    encoders[5] = {
+        "Center Screen Opacity",
+        "/composition/layers/6/master",
+        1.0f, 1.0f
+    };
+
+
     // Encoders 2-7: Default to disabled (none)
-    for (int i = 2; i < 8; i++) {
+    for (int i = 2; i < 5; i++) {
         encoders[i] = {
             "---",
             "",
@@ -331,17 +353,11 @@ void PushUI::updateEncoderPhysicalValue(int encoderIndex, int relativeValue) {
         //auto selectedLayer = resolumeTracker.getSelectedLayer();
         //auto selectedClip = resolumeTracker.getSelectedClip();
         
-        std::string address;
+        std::string address = assignment.oscAddress;
         float value = encoders[encoderIndex].physicalValue;
 
         if (encoderIndex == 8) {
             return; // Not implemented yet
-        } else {
-            // Scale value according to assignment range
-            //value = assignment.minValue + (value * (assignment.maxValue - assignment.minValue));
-            
-            // Determine target and build address
-            address = "/composition/selectedclip/" + assignment.oscAddress;
         }
         
         if (!address.empty()) {
@@ -356,15 +372,18 @@ void PushUI::handleEncoderTouch(int encoderIndex) {
     
     // TODO: Handle encoder touch event
     // This is called when encoder is touched (note on message)
-    std::cout << "Encoder " << encoderIndex << " touched" << std::endl;
 }
 
 void PushUI::handleEncoderButtonPress(int encoderIndex) {
-    if (encoderIndex < 0 || encoderIndex >= 8) return;
-    
-    // TODO: Handle encoder button press event  
-    // This is called when button above encoder is pressed (CC102-109)
-    std::cout << "Encoder button " << encoderIndex << " pressed" << std::endl;
+    if (encoderIndex == 7) {
+        encoders[7].physicalValue = 1.0f;
+    } else if (encoderIndex == 6) {
+        encoders[6].physicalValue = 1.0f;
+    } else if (encoderIndex == 5) {
+        encoders[5].physicalValue = 1.0f;
+    } else if (encoderIndex < 0 || encoderIndex >= 8) {
+        return;
+    }
 }
 
 void PushUI::onSelectedItemChange() {
