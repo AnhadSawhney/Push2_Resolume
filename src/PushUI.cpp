@@ -39,16 +39,7 @@ void PushUI::toggleMode() {
 }
 
 void PushUI::onMidiMessage(const PushMidiMessage& msg) {
-    if (msg.isNoteOn()) {
-        // Handle encoder touch events (notes 0-10)
-        if (msg.getNote() >= 0 && msg.getNote() <= 10 && msg.getVelocity() > 0) {
-            int encoderIndex = msg.getNote();
-            handleEncoderTouch(encoderIndex);
-            return;
-        }
-        
-        handlePadPress(msg.getNote(), msg.getVelocity());
-    } else if (msg.isPitchBend()) {
+    if (msg.isPitchBend()) {
         handleTouchStripPitchBend(msg.getPitchBend());
     } else if (msg.isControlChange()) {
         int cc = msg.getController();
@@ -161,10 +152,24 @@ void PushUI::onMidiMessage(const PushMidiMessage& msg) {
         }
 
         handleNavigationButtons(cc, value);
+    } else if (msg.isNoteOn() || msg.isNoteOff()) {
+        // Handle encoder touch events (notes 0-10)
+        if (msg.getNote() >= 0 && msg.getNote() <= 10 && msg.getVelocity() > 0) {
+            int encoderIndex = msg.getNote();
+            handleEncoderTouch(encoderIndex);
+            return;
+        }
+
+        if (msg.isNoteOn()) {
+            handlePadPress(msg.getNote(), msg.getVelocity());
+        } else if (msg.isNoteOff()) {
+            handlePadPress(msg.getNote(), -1); // velocity -1 for note off
+        }
     }
 }
 
 void PushUI::handlePadPress(int note, int velocity) {
+    //std::cout << "Pad pressed: " << note << " Velocity: " << (int)velocity << std::endl;
     if (note >= 36 && note <= 99) {
         int padIndex = note - 36;
         int gridRow = padIndex / 8;
@@ -177,7 +182,7 @@ void PushUI::handlePadPress(int note, int velocity) {
             std::string address = "/composition/layers/" + std::to_string(resolumeLayer) +
                                   "/clips/" + std::to_string(resolumeColumn) + "/select";
             if (oscSender) {
-                oscSender->sendMessage(address, velocity ? 1 : 0);
+                oscSender->sendMessage(address, velocity > 0 ? 1 : 0);
             } else {
                 std::cout << "Would select: " << address << std::endl;
             }
@@ -186,7 +191,7 @@ void PushUI::handlePadPress(int note, int velocity) {
             std::string address = "/composition/layers/" + std::to_string(resolumeLayer) +
                              "/clips/" + std::to_string(resolumeColumn) + "/connect";
             if (oscSender) {
-                oscSender->sendMessage(address, velocity ? 1 : 0);
+                oscSender->sendMessage(address, velocity > 0 ? 1 : 0);
             } else {
                 std::cout << "Would trigger: " << address << std::endl;
             }
