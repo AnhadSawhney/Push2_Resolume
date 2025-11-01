@@ -314,13 +314,20 @@ void PushUI::initializeDefaultEncoderAssignments() {
     // Center Screen opacity
     encoders[5] = {
         "Center Screen Opacity",
-        "/composition/layers/6/master",
+        "/composition/layers/4/master",
+        1.0f, 1.0f
+    };
+
+    // Background Master opacity
+    encoders[4] = {
+        "Background Master Opacity",
+        "/composition/layers/3/master",
         1.0f, 1.0f
     };
 
 
     // Encoders 2-7: Default to disabled (none)
-    for (int i = 2; i < 5; i++) {
+    for (int i = 2; i < 4; i++) {
         encoders[i] = {
             "---",
             "",
